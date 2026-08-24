@@ -211,7 +211,10 @@ export function WaveGridBackground({
     const getSize = () => ({
       width: container.clientWidth || 1,
       height: container.clientHeight || 1,
-      pixelRatio: Math.min(window.devicePixelRatio, 2),
+      pixelRatio: Math.min(
+        window.devicePixelRatio,
+        window.innerWidth < 768 ? 1.25 : 2,
+      ),
     });
     let size = getSize();
 

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme inline {
+  --font-panchang: var(--font-panchang), ui-sans-serif, system-ui, sans-serif;
+}
+
 @theme {
   --color-background: #ffffff;
   --color-foreground: #0f172a;
