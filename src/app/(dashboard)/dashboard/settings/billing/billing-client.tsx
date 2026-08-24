@@ -133,7 +133,8 @@ export function BillingClient({
               </span>
               {cancelAtPeriodEnd && currentPeriodEnd && (
                 <span className="rounded-full border px-3 py-1 text-xs font-medium">
-                  Cancels on {new Date(currentPeriodEnd).toLocaleDateString()}
+                  Cancels on{" "}
+                  {new Date(currentPeriodEnd).toISOString().split("T")[0]}
                 </span>
               )}
             </div>

@@ -34,10 +34,11 @@ function formatDate(
     {
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     },
   ).format(
     new Date(
-      `${value}T00:00:00`,
+      `${value}T00:00:00.000Z`,
     ),
   );
 }

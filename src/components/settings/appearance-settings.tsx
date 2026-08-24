@@ -1,11 +1,8 @@
 "use client";
 
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-import { useTheme } from "@/providers/theme-provider";
 
 export function AppearanceSettings() {
-  const { theme } = useTheme();
-
   return (
     <section className="rounded-2xl border bg-card p-6 shadow-sm">
       <h2 className="font-semibold">Appearance</h2>
@@ -16,7 +13,10 @@ export function AppearanceSettings() {
       <div className="mt-5 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Theme</p>
-          <p className="text-xs capitalize text-muted-foreground">{theme} mode</p>
+          <p className="text-xs text-muted-foreground">
+            <span className="dark:hidden">Light mode</span>
+            <span className="hidden dark:inline">Dark mode</span>
+          </p>
         </div>
         <ThemeToggle />
       </div>

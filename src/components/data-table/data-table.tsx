@@ -415,9 +415,9 @@ export function DataTable<T>({
                     {columns.slice(1).map((col) => (
                       <div key={col.id} className="flex items-start justify-between gap-3 text-sm">
                         <span className="shrink-0 text-muted-foreground">{col.header}</span>
-                        <span className="min-w-0 break-words text-right">
+                        <div className="min-w-0 break-words text-right">
                           {col.render ? col.render(row) : String((row as unknown as Record<string, unknown>)[String(col.accessor)] ?? "")}
-                        </span>
+                        </div>
                       </div>
                     ))}
                   </div>
