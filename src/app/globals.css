@@ -2,6 +2,7 @@
 
 @theme inline {
   --font-panchang: var(--font-panchang), ui-sans-serif, system-ui, sans-serif;
+  --font-excon: var(--font-excon), ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme {

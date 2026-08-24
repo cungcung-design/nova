@@ -21,6 +21,13 @@ const panchang = localFont({
   weight: "200 800",
 });
 
+const exconBold = localFont({
+  src: "./fonts/Excon-Bold.woff2",
+  variable: "--font-excon",
+  display: "swap",
+  weight: "700",
+});
+
 export const metadata: Metadata = {
   title: "NOVA",
   description: "Modern business management platform",
@@ -34,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${panchang.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${panchang.variable} ${exconBold.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <AuthSessionProvider>{children}</AuthSessionProvider>

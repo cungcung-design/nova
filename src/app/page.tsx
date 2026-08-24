@@ -27,7 +27,7 @@ export default function HomePage() {
               NOVA
             </p>
 
-            <h1 className="mt-5 max-w-full font-panchang text-4xl font-bold tracking-tight text-zinc-950 text-balance sm:mt-6 sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="mt-5 max-w-full font-excon text-4xl font-bold tracking-tight text-zinc-950 text-balance sm:mt-6 sm:text-5xl md:text-6xl lg:text-7xl">
               Modern business
               <br />
               management
