@@ -45,14 +45,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${panchang.variable} ${exconBold.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var p=location.pathname;var onDashboard=p==="/dashboard"||p.indexOf("/dashboard/")===0;var t=localStorage.getItem("${THEME_STORAGE_KEY}");var r=document.documentElement;if(onDashboard&&t==="dark"){r.classList.add("dark");r.style.colorScheme="dark"}else{r.classList.remove("dark");r.style.colorScheme="light"}}catch(e){}`,
           }}
         />
-      </head>
-      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <AuthSessionProvider>{children}</AuthSessionProvider>
       </body>
     </html>

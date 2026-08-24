@@ -85,7 +85,11 @@ export function ExportCenter() {
                 <div>
                   <p className="font-medium">{job.resource}</p>
                   <p className="text-sm text-muted-foreground">
-                    {job.format} · {new Date(job.createdAt).toLocaleString()}
+                    {job.format} ·{" "}
+                    {new Date(job.createdAt)
+                      .toISOString()
+                      .replace("T", " ")
+                      .slice(0, 16)}
                     {job.fileName ? ` · ${job.fileName}` : ""}
                   </p>
                   {job.status === "FAILED" && job.errorMessage ? (

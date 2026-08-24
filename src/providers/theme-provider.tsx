@@ -54,7 +54,10 @@ function readStoredTheme(): Theme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
+let hydrating = true;
+
 function subscribe(onStoreChange: () => void) {
+  hydrating = false;
   window.addEventListener("nova-theme", onStoreChange);
   window.addEventListener("storage", onStoreChange);
 
@@ -71,10 +74,20 @@ export function ThemeProvider({
   children: React.ReactNode;
   initialTheme?: Theme;
 }) {
+  const getSnapshot = useCallback(() => {
+    if (hydrating) {
+      return initialTheme;
+    }
+
+    return readStoredTheme();
+  }, [initialTheme]);
+
+  const getServerSnapshot = useCallback(() => initialTheme, [initialTheme]);
+
   const theme = useSyncExternalStore(
     subscribe,
-    readStoredTheme,
-    () => initialTheme,
+    getSnapshot,
+    getServerSnapshot,
   );
 
   useEffect(() => {

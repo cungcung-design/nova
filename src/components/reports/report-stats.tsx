@@ -72,7 +72,7 @@ export function ReportStats({
     {
       title: "Total Orders",
       value:
-        summary.orders.toLocaleString(),
+        summary.orders.toLocaleString("en-US"),
       growth:
         summary.ordersGrowth,
       icon: ShoppingCart,
@@ -80,7 +80,7 @@ export function ReportStats({
     {
       title: "New Customers",
       value:
-        summary.customers.toLocaleString(),
+        summary.customers.toLocaleString("en-US"),
       growth:
         summary.customersGrowth,
       icon: Users,

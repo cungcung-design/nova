@@ -74,7 +74,7 @@ export function StatCards({
     {
       title: "Orders",
       value:
-        summary.orders.toLocaleString(),
+        summary.orders.toLocaleString("en-US"),
       growth:
         summary.orderGrowth,
       icon: ShoppingBag,
@@ -83,7 +83,7 @@ export function StatCards({
     {
       title: "Customers",
       value:
-        summary.customers.toLocaleString(),
+        summary.customers.toLocaleString("en-US"),
       growth:
         summary.customerGrowth,
       icon: Users,

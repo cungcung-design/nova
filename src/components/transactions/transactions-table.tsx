@@ -148,7 +148,10 @@ export function TransactionsTable({
                   {transactions.map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-muted/30">
                       <td className="whitespace-nowrap px-5 py-4 text-muted-foreground">
-                        {new Date(transaction.createdAt).toLocaleString()}
+                        {new Date(transaction.createdAt)
+                          .toISOString()
+                          .replace("T", " ")
+                          .slice(0, 16)}
                       </td>
                       <td className="px-5 py-4">
                         <Link

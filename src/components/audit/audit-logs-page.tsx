@@ -115,7 +115,10 @@ export function AuditLogsPage() {
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {new Date(log.createdAt).toLocaleString()}
+                  {new Date(log.createdAt)
+                    .toISOString()
+                    .replace("T", " ")
+                    .slice(0, 16)}
                 </div>
               </div>
             ))}
