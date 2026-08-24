@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { CustomerForm } from "@/components/customers/customer-form";
 
@@ -10,7 +9,6 @@ type Props = {
 };
 
 export default function EditCustomerPage({ params }: Props) {
-  const router = useRouter();
   const [customer, setCustomer] = useState<{
     id: string;
     name: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, Trash } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 import { DeleteCustomerDialog } from "./delete-customer-dialog";
 

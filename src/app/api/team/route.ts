@@ -3,29 +3,23 @@ import { NextResponse } from "next/server";
 import { WorkspaceRole } from "@prisma/client";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { requireWorkspaceRole } from "@/lib/workspace-permissions";
-
 import { createInvitation, getTeam } from "@/services/team.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 export async function GET() {
   try {
     const workspace = await getCurrentWorkspace();
 
+    await requireRole(workspace.id, [...permissions.team.view]);
+
     const team = await getTeam(workspace.id);
 
     return NextResponse.json(team);
   } catch (error) {
-    console.error("GET /api/team", error);
-
-    return NextResponse.json(
-      {
-        error: "Unable to load team.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to load team.");
   }
 }
 
@@ -75,18 +69,6 @@ export async function POST(request: Request) {
       },
     );
   } catch (error) {
-    console.error("POST /api/team", error);
-
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unable to invite member.",
-      },
-      {
-        status: 400,
-      },
-    );
+    return apiErrorResponse(error, "Unable to invite member.");
   }
 }

@@ -68,7 +68,7 @@ function DropdownMenuContent({
   align,
   ...props
 }: React.ComponentProps<"div"> & { align?: string }) {
-  const { open, setOpen } = useMenuContext();
+  const { open } = useMenuContext();
 
   if (!open) {
     return null;
@@ -76,6 +76,7 @@ function DropdownMenuContent({
 
   return (
     <div
+      data-align={align}
       className={
         "z-50 min-w-[8rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md " +
         (className ?? "")

@@ -12,7 +12,7 @@ export default function Error({
       </h2>
 
       <p className="mt-2 text-sm text-muted-foreground">
-        We couldn't load your orders.
+        We could not load your orders.
       </p>
 
       <button

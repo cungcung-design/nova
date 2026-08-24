@@ -8,6 +8,8 @@ import {
 } from "@prisma/client";
 
 import { db } from "@/lib/db";
+import { ensureWorkspaceAccess, toUserRole } from "@/lib/membership";
+import { canAddTeamMember } from "@/lib/billing-limits";
 
 import { createActivity } from "./activity.service";
 import { createNotification } from "./notification.service";
@@ -62,6 +64,19 @@ export async function createInvitation({
   actorId: string;
 }) {
   const normalizedEmail = email.trim().toLowerCase();
+
+  const memberCount = await db.workspaceMember.count({
+    where: { workspaceId },
+  });
+
+  const subscription = await db.subscription.findUnique({
+    where: { workspaceId },
+    select: { plan: true },
+  });
+
+  if (!(await canAddTeamMember(subscription?.plan ?? "FREE", memberCount))) {
+    throw new Error("PLAN_LIMIT");
+  }
 
   const existingUser = await db.user.findUnique({
     where: {
@@ -181,6 +196,15 @@ export async function updateMemberRole(
   });
 
   if (result.count > 0 && member) {
+    await db.membership.updateMany({
+      where: {
+        userId: member.userId,
+        workspaceId,
+      },
+      data: {
+        role: toUserRole(role),
+      },
+    });
     await createActivity({
       workspaceId,
       userId: actorId,
@@ -232,6 +256,12 @@ export async function removeMember(
   });
 
   if (result.count > 0 && member) {
+    await db.membership.deleteMany({
+      where: {
+        userId: member.userId,
+        workspaceId,
+      },
+    });
     await createActivity({
       workspaceId,
       userId: actorId,
@@ -252,4 +282,46 @@ export async function removeMember(
   }
 
   return result;
+}
+
+export async function acceptInvitation(
+  token: string,
+  userId: string,
+  email: string,
+) {
+  const invitation = await db.workspaceInvitation.findUnique({
+    where: { token },
+  });
+
+  if (!invitation || invitation.status !== InvitationStatus.PENDING) {
+    throw new Error("Invalid invitation.");
+  }
+
+  if (invitation.expiresAt < new Date()) {
+    await db.workspaceInvitation.update({
+      where: { id: invitation.id },
+      data: { status: InvitationStatus.EXPIRED },
+    });
+    throw new Error("This invitation has expired.");
+  }
+
+  if (invitation.email !== email.trim().toLowerCase()) {
+    throw new Error("This invitation was sent to a different email address.");
+  }
+
+  await db.$transaction(async (tx) => {
+    await ensureWorkspaceAccess(
+      tx,
+      userId,
+      invitation.workspaceId,
+      invitation.role,
+    );
+
+    await tx.workspaceInvitation.update({
+      where: { id: invitation.id },
+      data: { status: InvitationStatus.ACCEPTED },
+    });
+  });
+
+  return invitation;
 }

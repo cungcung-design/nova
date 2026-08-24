@@ -8,102 +8,89 @@ import {
   getCustomers,
 } from "@/services/customer.service";
 import { customerSchema } from "@/lib/validations/customer";
+import { apiErrorResponse } from "@/lib/api-error";
+import { getWorkspaceSubscription } from "@/services/billing.service";
+import { canAddCustomer } from "@/lib/billing-limits";
+import { db } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
-    const workspace =
-      await getCurrentWorkspace();
+    const workspace = await getCurrentWorkspace();
 
-    const { searchParams } =
-      new URL(request.url);
+    const url = new URL(request.url);
 
-    const search =
-      searchParams.get("search") || undefined;
+    const search = url.searchParams.get("search")?.trim() ?? "";
 
-    const status =
-      searchParams.get("status") as
-        | "ACTIVE"
-        | "INACTIVE"
-        | "LEAD"
-        | null;
+    const status = url.searchParams.get("status");
 
-    const page = Math.max(
-      Number(searchParams.get("page")) || 1,
-      1,
-    );
+    const page = Math.max(1, Number(url.searchParams.get("page") ?? "1"));
+
+    const pageSize = Math.min(100, Math.max(10, Number(url.searchParams.get("pageSize") ?? "25")));
+
+    const sortBy = url.searchParams.get("sortBy") ?? "createdAt";
+
+    const sortDirection = url.searchParams.get("sortDirection") === "asc" ? "asc" : "desc";
+
+    const allowedSortFields = ["createdAt", "name", "email"] as const;
+    const safeSortBy = allowedSortFields.includes(sortBy as (typeof allowedSortFields)[number])
+      ? sortBy
+      : "createdAt";
+
+    const dateFrom = url.searchParams.get("dateFrom") ?? undefined;
+    const dateTo = url.searchParams.get("dateTo") ?? undefined;
 
     const result = await getCustomers({
       workspaceId: workspace.id,
-      search,
-      status: status || undefined,
+      search: search || undefined,
+      status: status as "ACTIVE" | "INACTIVE" | "LEAD" | undefined,
       page,
+      pageSize,
+      sortBy: safeSortBy,
+      sortDirection,
+      dateFrom,
+      dateTo,
     });
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { error: "Unable to fetch customers." },
-      { status: 500 },
-    );
+    return apiErrorResponse(error, "Unable to load customers.");
   }
 }
 
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
-    const workspace =
-      await getCurrentWorkspace();
+    const workspace = await getCurrentWorkspace();
 
-    const membership = await requireRole(
-      workspace.id,
-      [...permissions.customers.create],
-    );
+    const membership = await requireRole(workspace.id, [...permissions.customers.create]);
 
-    if (
-      !hasPermission(
-        membership.role,
-        permissions.customers.create,
-      )
-    ) {
-      return NextResponse.json(
-        { error: "Forbidden." },
-        { status: 403 },
-      );
+    if (!hasPermission(membership.role, permissions.customers.create)) {
+      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
     const body = await request.json();
-
-    const parsed =
-      customerSchema.safeParse(body);
+    const parsed = customerSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
-        {
-          error: "Invalid customer data.",
-          details: parsed.error.flatten(),
-        },
-        { status: 400 },
+        { error: "Invalid customer data.", details: parsed.error.flatten() },
+        { status: 400 }
       );
     }
 
-    const customer = await createCustomer(
-      workspace.id,
-      user.id!,
-      parsed.data,
-    );
+    const subscription = await getWorkspaceSubscription(workspace.id);
+    const customerCount = await db.customer.count({
+      where: { workspaceId: workspace.id },
+    });
 
-    return NextResponse.json(
-      customer,
-      { status: 201 },
-    );
+    if (!(await canAddCustomer(subscription.plan, customerCount))) {
+      throw new Error("PLAN_LIMIT");
+    }
+
+    const customer = await createCustomer(workspace.id, user.id!, parsed.data);
+
+    return NextResponse.json(customer, { status: 201 });
   } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { error: "Unable to create customer." },
-      { status: 500 },
-    );
+    return apiErrorResponse(error, "Unable to create customer.");
   }
 }

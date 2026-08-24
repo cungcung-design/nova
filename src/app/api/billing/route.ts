@@ -1,32 +1,23 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { getWorkspaceSubscription } from "@/services/billing.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 export async function GET() {
   try {
-    const workspace =
-      await getCurrentWorkspace();
+    const workspace = await getCurrentWorkspace();
 
-    const subscription =
-      await getWorkspaceSubscription(
-        workspace.id,
-      );
+    await requireRole(workspace.id, [...permissions.billing.view]);
+
+    const subscription = await getWorkspaceSubscription(workspace.id);
 
     return NextResponse.json({
       subscription,
     });
   } catch (error) {
-    console.error("GET /api/billing", error);
-
-    return NextResponse.json(
-      {
-        error: "Unable to load billing information.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to load billing information.");
   }
 }

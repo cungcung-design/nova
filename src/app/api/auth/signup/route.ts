@@ -74,6 +74,23 @@ export async function POST(request: Request) {
         },
       });
 
+      await tx.workspaceMember.create({
+        data: {
+          userId: newUser.id,
+          workspaceId: workspace.id,
+          role: "OWNER",
+        },
+      });
+
+      await tx.subscription.create({
+        data: {
+          workspaceId: workspace.id,
+          stripeCustomerId: `pending_${workspace.id}`,
+          plan: "FREE",
+          status: "ACTIVE",
+        },
+      });
+
       return newUser;
     });
 

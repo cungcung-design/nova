@@ -75,6 +75,34 @@ export const permissions = {
     ],
   },
 
+  orders: {
+    view: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+      UserRole.MANAGER,
+      UserRole.MEMBER,
+      UserRole.VIEWER,
+    ],
+
+    create: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+      UserRole.MANAGER,
+      UserRole.MEMBER,
+    ],
+
+    update: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+      UserRole.MANAGER,
+    ],
+
+    delete: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+    ],
+  },
+
   team: {
     view: [
       UserRole.OWNER,

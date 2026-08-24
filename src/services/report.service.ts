@@ -55,7 +55,7 @@ export async function getReport(
     previousCustomers,
     orderStatuses,
     newCustomers,
-    previousCustomersList,
+    ,
     customerOrders,
     products,
   ] = await Promise.all([

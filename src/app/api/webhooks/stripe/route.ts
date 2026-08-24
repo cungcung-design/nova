@@ -5,6 +5,7 @@ import Stripe from "stripe";
 import {
   SubscriptionPlan,
   SubscriptionStatus,
+  WorkspacePlan,
 } from "@prisma/client";
 
 import { stripe } from "@/lib/stripe";
@@ -23,6 +24,17 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Stripe webhook secret is not configured.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  if (!stripe) {
+    return NextResponse.json(
+      {
+        error: "Stripe is not configured.",
       },
       {
         status: 500,
@@ -181,6 +193,15 @@ async function handleCheckoutCompleted(
       plan: SubscriptionPlan.PRO,
     },
   });
+
+  await db.workspace.update({
+    where: {
+      id: workspaceId,
+    },
+    data: {
+      plan: WorkspacePlan.PRO,
+    },
+  });
 }
 
 async function handleSubscriptionChange(
@@ -296,6 +317,18 @@ async function handleSubscriptionChange(
         canceledAt: subscription.canceled_at
           ? new Date(subscription.canceled_at * 1000)
           : null,
+      },
+    });
+
+    await db.workspace.update({
+      where: {
+        id: workspaceId,
+      },
+      data: {
+        plan:
+          plan === SubscriptionPlan.PRO
+            ? WorkspacePlan.PRO
+            : WorkspacePlan.FREE,
       },
     });
   } else {

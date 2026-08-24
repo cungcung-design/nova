@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
-import {
-  updateOrderStatus,
-} from "@/services/order.service";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
+import { updateOrderStatus } from "@/services/order.service";
+import { apiErrorResponse } from "@/lib/api-error";
 import { z } from "zod";
 
 const statusSchema = z.object({
@@ -36,6 +35,11 @@ export async function PATCH(
     const workspace =
       await getCurrentWorkspace();
 
+    await requireRole(
+      workspace.id,
+      [...permissions.orders.update],
+    );
+
     const body =
       await request.json();
 
@@ -61,13 +65,7 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
     });
-  } catch {
-    return NextResponse.json(
-      {
-        error:
-          "Unable to update order.",
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to update order.");
   }
 }

@@ -1,4 +1,4 @@
-import { AuditAction } from "@prisma/client";
+import { AuditAction, type Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 
@@ -46,7 +46,7 @@ export async function createAuditLog(
         input.description,
 
       metadata:
-        input.metadata as any,
+        input.metadata as Prisma.InputJsonValue | undefined,
 
       ipAddress:
         input.ipAddress,

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Mail, UserPlus } from "lucide-react";
 
 export function InviteMember() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
   const [loading, setLoading] = useState(false);
@@ -37,6 +39,7 @@ export function InviteMember() {
       setEmail("");
 
       setMessage("Invitation created successfully.");
+      router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error

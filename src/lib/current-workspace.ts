@@ -1,34 +1,12 @@
 import { db } from "@/lib/db";
-
-import {
-  getActiveWorkspaceId,
-} from "@/lib/workspace-context";
-
+import { getActiveWorkspaceId } from "@/lib/workspace-context";
 import { requireUser } from "@/lib/authz";
 
-const DEV_USER_EMAIL = "john@nova.dev";
-
 export async function getCurrentWorkspace() {
-  let user;
-  let userId;
+  const user = await requireUser();
+  const userId = user.id;
 
-  try {
-    user = await requireUser();
-    userId = user.id;
-  } catch {
-    const devUser = await db.user.findUnique({
-      where: { email: DEV_USER_EMAIL },
-    });
-
-    if (!devUser) {
-      throw new Error("NO_WORKSPACE");
-    }
-
-    userId = devUser.id;
-  }
-
-  const activeWorkspaceId =
-    await getActiveWorkspaceId();
+  const activeWorkspaceId = await getActiveWorkspaceId();
 
   let membership;
 
@@ -40,7 +18,6 @@ export async function getCurrentWorkspace() {
           workspaceId: activeWorkspaceId,
         },
       },
-
       include: {
         workspace: true,
       },
@@ -52,11 +29,9 @@ export async function getCurrentWorkspace() {
       where: {
         userId,
       },
-
       include: {
         workspace: true,
       },
-
       orderBy: {
         createdAt: "asc",
       },
@@ -69,9 +44,7 @@ export async function getCurrentWorkspace() {
 
   return {
     ...membership.workspace,
-
     userId,
-
     role: membership.role,
   };
 }

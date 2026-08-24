@@ -4,7 +4,6 @@ import { getCurrentWorkspace } from "@/lib/current-workspace";
 
 import {
   getOrderById,
-  updateOrderStatus,
 } from "@/services/order.service";
 
 type Context = {
