@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { toNumber } from "@/lib/utils";
 import type { Prisma, ProductStatus } from "@prisma/client";
 
 type ProductFilters = {
@@ -52,8 +53,14 @@ export async function getProducts({
 
   return {
     products: products.map((product) => ({
-      ...product,
-      price: Number(product.price),
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      status: product.status,
+      stock: product.stock,
+      createdAt: product.createdAt,
+      price: toNumber(product.price),
+      cost: product.cost == null ? null : toNumber(product.cost),
     })),
     total,
     page,

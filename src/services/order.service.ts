@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { toNumber } from "@/lib/utils";
 import type { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 
 type OrderFilters = {
@@ -57,8 +58,19 @@ export async function getOrders({
 
   return {
     orders: orders.map((order) => ({
-      ...order,
-      total: Number(order.total),
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      createdAt: order.createdAt,
+      customer: {
+        name: order.customer?.name ?? "",
+        email: order.customer?.email ?? null,
+      },
+      subtotal: toNumber(order.subtotal),
+      tax: toNumber(order.tax),
+      discount: toNumber(order.discount),
+      total: toNumber(order.total),
     })),
     total,
     page,

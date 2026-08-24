@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { getProductById } from "@/services/product.service";
+import { toNumber } from "@/lib/utils";
 
 import { ProductForm } from "@/components/products/product-form";
 
@@ -47,8 +48,8 @@ export default async function EditProductPage({
           name: product.name,
           description: product.description,
           sku: product.sku,
-          price: product.price,
-          cost: product.cost,
+          price: toNumber(product.price),
+          cost: product.cost == null ? null : toNumber(product.cost),
           stock: product.stock,
           status: product.status,
         }}

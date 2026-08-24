@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { toNumber } from "@/lib/utils";
 
 type AnalyticsRange = 7 | 30 | 90;
 
@@ -378,7 +379,14 @@ export async function getAnalytics(
 
     revenueChart,
 
-    recentOrders,
+    recentOrders: recentOrders.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      total: toNumber(order.total),
+      status: order.status,
+      createdAt: order.createdAt,
+      customer: order.customer,
+    })),
 
     topProducts: products,
   };
