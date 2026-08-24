@@ -6,7 +6,7 @@ import {
   useSearchParams,
 } from "next/navigation";
 
-import { Download } from "lucide-react";
+import { ExportButton } from "@/components/export/export-button";
 
 type Props = {
   range: 7 | 30 | 90;
@@ -16,26 +16,13 @@ export function ReportHeader({
   range,
 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const pathname =
-    usePathname();
-
-  const searchParams =
-    useSearchParams();
-
-  function changeRange(
-    value: string,
-  ) {
-    const params =
-      new URLSearchParams(
-        searchParams.toString(),
-      );
-
+  function changeRange(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
     params.set("range", value);
-
-    router.push(
-      `${pathname}?${params.toString()}`,
-    );
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   return (
@@ -44,11 +31,7 @@ export function ReportHeader({
         <p className="text-sm font-medium text-muted-foreground">
           Business intelligence
         </p>
-
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Reports
-        </h1>
-
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Reports</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Analyze your business performance in detail.
         </p>
@@ -56,37 +39,23 @@ export function ReportHeader({
 
       <div className="flex flex-wrap gap-2">
         <div className="flex rounded-xl border bg-card p-1">
-          {["7", "30", "90"].map(
-            (value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() =>
-                  changeRange(
-                    value,
-                  )
-                }
-                className={`rounded-lg px-3 py-2 text-sm ${
-                  range.toString() ===
-                  value
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {value} days
-              </button>
-            ),
-          )}
+          {["7", "30", "90"].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => changeRange(value)}
+              className={`rounded-lg px-3 py-2 text-sm ${
+                range.toString() === value
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {value} days
+            </button>
+          ))}
         </div>
 
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-xl border bg-card px-4 py-2 text-sm font-medium hover:bg-muted"
-        >
-          <Download className="h-4 w-4" />
-
-          Export
-        </button>
+        <ExportButton resource="ANALYTICS" filters={{ range }} />
       </div>
     </div>
   );

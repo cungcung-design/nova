@@ -11,6 +11,8 @@ import {
 } from "@/services/product.service";
 
 import { productSchema } from "@/lib/validations/product";
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 type Context = {
   params: Promise<{
@@ -89,16 +91,19 @@ export async function PATCH(
       parsed.data,
     );
 
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "PRODUCT_UPDATED",
+      entityType: "PRODUCT",
+      entityId: productId,
+    });
+
     return NextResponse.json({
       success: true,
     });
-  } catch {
-    return NextResponse.json(
-      {
-        error: "Unable to update product.",
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to update product.");
   }
 }
 
@@ -122,15 +127,18 @@ export async function DELETE(
       productId,
     );
 
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "PRODUCT_DELETED",
+      entityType: "PRODUCT",
+      entityId: productId,
+    });
+
     return NextResponse.json({
       success: true,
     });
-  } catch {
-    return NextResponse.json(
-      {
-        error: "Unable to delete product.",
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to delete product.");
   }
 }

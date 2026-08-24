@@ -8,6 +8,8 @@ import { permissions } from "@/lib/permissions";
 import { requireWorkspaceRole } from "@/lib/workspace-permissions";
 import { createInvitation, getTeam } from "@/services/team.service";
 import { apiErrorResponse } from "@/lib/api-error";
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { emailSchema } from "@/lib/validation/auth";
 
 export async function GET() {
   try {
@@ -42,10 +44,13 @@ export async function POST(request: Request) {
         ? WorkspaceRole.ADMIN
         : WorkspaceRole.MEMBER;
 
-    if (!email) {
+    const parsedEmail = emailSchema.safeParse(email);
+
+    if (!parsedEmail.success) {
       return NextResponse.json(
         {
-          error: "Email is required.",
+          error: "A valid email is required.",
+          message: "A valid email is required.",
         },
         {
           status: 400,
@@ -55,9 +60,22 @@ export async function POST(request: Request) {
 
     const invitation = await createInvitation({
       workspaceId: workspace.id,
-      email,
+      email: parsedEmail.data,
       role,
       actorId: workspace.userId,
+    });
+
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "USER_CREATED",
+      entityType: "USER",
+      entityId: invitation.id,
+      metadata: {
+        email: parsedEmail.data,
+        role,
+        type: "invite",
+      },
     });
 
     return NextResponse.json(

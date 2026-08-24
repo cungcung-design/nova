@@ -6,6 +6,7 @@ import { permissions } from "@/lib/permissions";
 import { updateOrderStatus } from "@/services/order.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit/audit-service";
 
 const statusSchema = z.object({
   status: z.enum([
@@ -61,6 +62,20 @@ export async function PATCH(
       orderId,
       parsed.data.status,
     );
+
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action:
+        parsed.data.status === "CANCELLED"
+          ? "ORDER_CANCELLED"
+          : "ORDER_UPDATED",
+      entityType: "ORDER",
+      entityId: orderId,
+      metadata: {
+        status: parsed.data.status,
+      },
+    });
 
     return NextResponse.json({
       success: true,

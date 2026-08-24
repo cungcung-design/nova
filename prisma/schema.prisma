@@ -83,6 +83,7 @@ enum InvitationStatus {
 enum SubscriptionPlan {
   FREE
   PRO
+  BUSINESS
 }
 
 enum SubscriptionStatus {
@@ -164,6 +165,7 @@ model Workspace {
   activities   Activity[]
   notifications Notification[]
   auditLogs    AuditLog[]
+  exportJobs   ExportJob[]
 
   subscription Subscription?
 
@@ -504,6 +506,29 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@index([workspaceId, createdAt])
+}
+
+model ExportJob {
+  id          String  @id @default(cuid())
+  workspaceId String
+
+  resource String
+  format   String
+  status   String  @default("PENDING")
+
+  fileName     String?
+  fileUrl      String?
+  filters      Json?
+  errorMessage String?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Account {

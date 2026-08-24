@@ -3,7 +3,9 @@ import {
   BarChart3,
   Bell,
   CreditCard,
+  Download,
   FileBarChart,
+  FileText,
   LayoutDashboard,
   Package,
   Receipt,
@@ -31,6 +33,11 @@ export const mainNavigation = [
         title: "Reports",
         href: "/dashboard/reports",
         icon: FileBarChart,
+      },
+      {
+        title: "Exports",
+        href: "/dashboard/exports",
+        icon: Download,
       },
     ],
   },
@@ -81,6 +88,11 @@ export const mainNavigation = [
         title: "Notifications",
         href: "/dashboard/notifications",
         icon: Bell,
+      },
+      {
+        title: "Audit Logs",
+        href: "/dashboard/audit-logs",
+        icon: FileText,
       },
       {
         title: "Billing",

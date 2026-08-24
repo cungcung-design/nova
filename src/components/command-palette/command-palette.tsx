@@ -213,7 +213,7 @@ export function CommandPalette({
                 title: "Audit Logs",
                 description:
                   "View workspace security activity",
-                href: "/dashboard/settings/audit-logs",
+                href: "/dashboard/audit-logs",
                 icon: FileText,
                 keywords: [
                   "security",

@@ -13,6 +13,8 @@ import { apiErrorResponse } from "@/lib/api-error";
 import { getWorkspaceSubscription } from "@/services/billing.service";
 import { canAddProduct } from "@/lib/billing-limits";
 import { db } from "@/lib/db";
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { sanitizeSearchQuery } from "@/lib/security/security";
 
 export async function GET(
   request: Request,
@@ -30,9 +32,9 @@ export async function GET(
       new URL(request.url);
 
     const search =
-      url.searchParams
-        .get("search")
-        ?.trim() ?? "";
+      sanitizeSearchQuery(
+        url.searchParams.get("search")?.trim() ?? "",
+      );
 
     const status =
       url.searchParams.get("status");
@@ -130,6 +132,14 @@ export async function POST(
         workspace.id,
         parsed.data,
       );
+
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "PRODUCT_CREATED",
+      entityType: "PRODUCT",
+      entityId: product.id,
+    });
 
     return NextResponse.json(
       product,

@@ -26,7 +26,17 @@ export function apiErrorResponse(error: unknown, fallback: string) {
     );
   }
 
-  console.error(error);
+  if (message === "RATE_LIMITED") {
+    return NextResponse.json(
+      {
+        message: "Too many requests. Please try again later.",
+        error: "Too many requests. Please try again later.",
+      },
+      { status: 429 },
+    );
+  }
 
-  return NextResponse.json({ error: fallback }, { status: 500 });
+  console.error("Internal error:", error);
+
+  return NextResponse.json({ error: fallback, message: fallback }, { status: 500 });
 }

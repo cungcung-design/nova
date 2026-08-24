@@ -4,20 +4,15 @@ import {
 } from "@prisma/client";
 
 import { db } from "@/lib/db";
-
-import { stripe } from "@/lib/stripe";
-
 import { billingPlans } from "@/config/billing";
+import { getPriceId } from "@/lib/payments/env";
+import type { BillingInterval } from "@/lib/payments/provider";
+import { paymentProvider } from "@/lib/payments/provider-implementation";
 
-export async function getWorkspaceSubscription(
-  workspaceId: string,
-) {
-  const subscription =
-    await db.subscription.findUnique({
-      where: {
-        workspaceId,
-      },
-    });
+export async function getWorkspaceSubscription(workspaceId: string) {
+  const subscription = await db.subscription.findUnique({
+    where: { workspaceId },
+  });
 
   if (subscription) {
     return subscription;
@@ -26,11 +21,8 @@ export async function getWorkspaceSubscription(
   return db.subscription.create({
     data: {
       workspaceId,
-
       stripeCustomerId: `pending_${workspaceId}`,
-
       plan: SubscriptionPlan.FREE,
-
       status: SubscriptionStatus.ACTIVE,
     },
   });
@@ -41,166 +33,135 @@ export async function createStripeCustomer(
   workspaceName: string,
   email: string,
 ) {
-  if (!stripe) {
-    throw new Error(
-      "Stripe is not configured on the server.",
-    );
-  }
+  const existing = await db.subscription.findUnique({
+    where: { workspaceId },
+  });
 
-  const existing =
-    await db.subscription.findUnique({
-      where: {
-        workspaceId,
-      },
-    });
-
-  if (
-    existing &&
-    !existing.stripeCustomerId.startsWith("pending_")
-  ) {
+  if (existing && !existing.stripeCustomerId.startsWith("pending_")) {
     return existing;
   }
 
-  const customer = await stripe.customers.create({
-    name: workspaceName,
-
-    email,
-
-    metadata: {
-      workspaceId,
-    },
-  });
+  const customerId = await paymentProvider.createCustomer(email, workspaceName);
 
   if (existing) {
     return db.subscription.update({
-      where: {
-        workspaceId,
-      },
-
-      data: {
-        stripeCustomerId: customer.id,
-      },
+      where: { workspaceId },
+      data: { stripeCustomerId: customerId },
     });
   }
 
   return db.subscription.create({
     data: {
       workspaceId,
-
-      stripeCustomerId: customer.id,
-
+      stripeCustomerId: customerId,
       plan: SubscriptionPlan.FREE,
-
       status: SubscriptionStatus.ACTIVE,
     },
   });
 }
 
-export async function createCheckoutSession(
-  workspaceId: string,
-  workspaceName: string,
-  email: string,
-) {
-  if (!stripe) {
-    throw new Error(
-      "Stripe is not configured on the server.",
-    );
+function parsePaidPlan(planId: string) {
+  const normalized = planId.trim().toLowerCase();
+
+  if (normalized === "pro" || normalized === "PRO".toLowerCase()) {
+    return "pro" as const;
   }
 
-  const priceId = billingPlans.PRO.stripePriceId;
-
-  if (!priceId) {
-    throw new Error(
-      "STRIPE_PRO_PRICE_ID is not configured.",
-    );
+  if (normalized === "business") {
+    return "business" as const;
   }
 
-  const subscription =
-    await createStripeCustomer(
-      workspaceId,
-      workspaceName,
-      email,
-    );
-
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL;
-
-  if (!appUrl) {
-    throw new Error(
-      "NEXT_PUBLIC_APP_URL is not configured.",
-    );
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-
-    customer: subscription.stripeCustomerId,
-
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-
-    success_url: `${appUrl}/dashboard/settings/billing?success=true`,
-
-    cancel_url: `${appUrl}/dashboard/settings/billing?canceled=true`,
-
-    metadata: {
-      workspaceId,
-    },
-
-    subscription_data: {
-      metadata: {
-        workspaceId,
-      },
-    },
-  });
-
-  return session;
+  return null;
 }
 
-export async function createBillingPortalSession(
-  workspaceId: string,
-) {
-  if (!stripe) {
-    throw new Error(
-      "Stripe is not configured on the server.",
-    );
+export async function createCheckoutSession(input: {
+  workspaceId: string;
+  workspaceName: string;
+  email: string;
+  userId: string;
+  planId?: string;
+  interval?: BillingInterval;
+}) {
+  const interval = input.interval ?? "MONTH";
+  const planSlug = parsePaidPlan(input.planId ?? "pro");
+
+  if (!planSlug) {
+    throw new Error("PLAN_NOT_FOUND");
   }
 
-  const subscription =
-    await db.subscription.findUnique({
-      where: {
-        workspaceId,
-      },
-    });
+  const subscription = await getWorkspaceSubscription(input.workspaceId);
+  const targetPlan =
+    planSlug === "business" ? SubscriptionPlan.BUSINESS : SubscriptionPlan.PRO;
+
+  if (
+    subscription.plan === targetPlan &&
+    subscription.status === SubscriptionStatus.ACTIVE
+  ) {
+    throw new Error("ALREADY_SUBSCRIBED");
+  }
+
+  const priceId = getPriceId(planSlug, interval);
+
+  if (!priceId) {
+    throw new Error("PRICE_NOT_CONFIGURED");
+  }
+
+  const customer =
+    subscription.stripeCustomerId.startsWith("pending_")
+      ? await createStripeCustomer(
+          input.workspaceId,
+          input.workspaceName,
+          input.email,
+        )
+      : subscription;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!appUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL is not configured.");
+  }
+
+  return paymentProvider.createCheckoutSession({
+    workspaceId: input.workspaceId,
+    userId: input.userId,
+    priceId,
+    customerId: customer.stripeCustomerId,
+    email: input.email,
+    customerName: input.workspaceName,
+    successUrl: `${appUrl}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${appUrl}/dashboard/settings/billing?canceled=true`,
+    metadata: {
+      plan: targetPlan,
+      interval,
+    },
+  });
+}
+
+export async function createBillingPortalSession(workspaceId: string) {
+  const subscription = await db.subscription.findUnique({
+    where: { workspaceId },
+  });
 
   if (!subscription) {
     throw new Error("Billing customer not found.");
   }
 
-  if (
-    subscription.stripeCustomerId.startsWith("pending_")
-  ) {
-    throw new Error(
-      "No Stripe customer exists yet.",
-    );
+  if (subscription.stripeCustomerId.startsWith("pending_")) {
+    throw new Error("No Stripe customer exists yet.");
   }
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   if (!appUrl) {
-    throw new Error(
-      "NEXT_PUBLIC_APP_URL is not configured.",
-    );
+    throw new Error("NEXT_PUBLIC_APP_URL is not configured.");
   }
 
-  return stripe.billingPortal.sessions.create({
-    customer: subscription.stripeCustomerId,
+  const url = await paymentProvider.createBillingPortal(
+    subscription.stripeCustomerId,
+    `${appUrl}/dashboard/settings/billing`,
+  );
 
-    return_url: `${appUrl}/dashboard/settings/billing`,
-  });
+  return { url };
 }
+
+export { billingPlans };

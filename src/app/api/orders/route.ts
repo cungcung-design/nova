@@ -6,6 +6,8 @@ import { permissions } from "@/lib/permissions";
 import { createOrder, getOrders } from "@/services/order.service";
 import { orderSchema } from "@/lib/validations/order";
 import { apiErrorResponse } from "@/lib/api-error";
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { sanitizeSearchQuery } from "@/lib/security/security";
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +17,9 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
 
-    const search = url.searchParams.get("search")?.trim() ?? "";
+    const search = sanitizeSearchQuery(
+      url.searchParams.get("search")?.trim() ?? "",
+    );
     const status = url.searchParams.get("status");
     const paymentStatus = url.searchParams.get("paymentStatus");
     const page = Math.max(1, Number(url.searchParams.get("page") ?? "1"));
@@ -62,6 +66,14 @@ export async function POST(request: Request) {
     }
 
     const order = await createOrder(workspace.id, parsed.data);
+
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "ORDER_CREATED",
+      entityType: "ORDER",
+      entityId: order.id,
+    });
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

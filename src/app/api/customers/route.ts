@@ -12,43 +12,52 @@ import { apiErrorResponse } from "@/lib/api-error";
 import { getWorkspaceSubscription } from "@/services/billing.service";
 import { canAddCustomer } from "@/lib/billing-limits";
 import { db } from "@/lib/db";
+import { getCustomerFilters } from "@/lib/filters";
+import { createAuditLog } from "@/lib/audit/audit-service";
 
 export async function GET(request: Request) {
   try {
     const workspace = await getCurrentWorkspace();
 
     const url = new URL(request.url);
-
-    const search = url.searchParams.get("search")?.trim() ?? "";
-
-    const status = url.searchParams.get("status");
+    const filters = getCustomerFilters(url.searchParams);
 
     const page = Math.max(1, Number(url.searchParams.get("page") ?? "1"));
+    const pageSize = Math.min(
+      100,
+      Math.max(10, Number(url.searchParams.get("pageSize") ?? "25")),
+    );
 
-    const pageSize = Math.min(100, Math.max(10, Number(url.searchParams.get("pageSize") ?? "25")));
+    const sortBy =
+      url.searchParams.get("sortBy") ??
+      url.searchParams.get("sort") ??
+      "createdAt";
 
-    const sortBy = url.searchParams.get("sortBy") ?? "createdAt";
+    const sortDirection =
+      (url.searchParams.get("sortDirection") ??
+        url.searchParams.get("direction")) === "asc"
+        ? "asc"
+        : "desc";
 
-    const sortDirection = url.searchParams.get("sortDirection") === "asc" ? "asc" : "desc";
-
-    const allowedSortFields = ["createdAt", "name", "email"] as const;
-    const safeSortBy = allowedSortFields.includes(sortBy as (typeof allowedSortFields)[number])
+    const allowedSortFields = ["createdAt", "name", "email", "status"] as const;
+    const safeSortBy = allowedSortFields.includes(
+      sortBy as (typeof allowedSortFields)[number],
+    )
       ? sortBy
       : "createdAt";
 
-    const dateFrom = url.searchParams.get("dateFrom") ?? undefined;
-    const dateTo = url.searchParams.get("dateTo") ?? undefined;
-
     const result = await getCustomers({
       workspaceId: workspace.id,
-      search: search || undefined,
-      status: status as "ACTIVE" | "INACTIVE" | "LEAD" | undefined,
+      search: filters.search,
+      statuses: filters.statuses,
       page,
       pageSize,
       sortBy: safeSortBy,
       sortDirection,
-      dateFrom,
-      dateTo,
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
+      minRevenue: filters.minRevenue,
+      maxRevenue: filters.maxRevenue,
     });
 
     return NextResponse.json(result);
@@ -88,6 +97,14 @@ export async function POST(request: Request) {
     }
 
     const customer = await createCustomer(workspace.id, user.id!, parsed.data);
+
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: user.id,
+      action: "CUSTOMER_CREATED",
+      entityType: "CUSTOMER",
+      entityId: customer.id,
+    });
 
     return NextResponse.json(customer, { status: 201 });
   } catch (error) {

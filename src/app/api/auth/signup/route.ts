@@ -2,34 +2,31 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { rateLimit, rateLimitResponse } from "@/lib/security/rate-limit";
+import { getClientIp } from "@/lib/security/security";
+import { signupSchema } from "@/lib/validation/auth";
+import { parseRequestBody } from "@/lib/validation/parse";
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const limited = await rateLimit(`signup:${getClientIp(request)}`, 10, 60);
 
-    const name = String(body.name ?? "").trim();
-    const email = String(body.email ?? "")
-      .trim()
-      .toLowerCase();
-    const password = String(body.password ?? "");
-
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        {
-          error: "Name, email, and password are required.",
-        },
-        { status: 400 }
+    if (!limited.success) {
+      return rateLimitResponse(
+        "Too many signup attempts. Please try again later.",
       );
     }
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        {
-          error:
-            "Password must be at least 8 characters.",
-        },
-        { status: 400 }
-      );
+    const parsed = await parseRequestBody(request, signupSchema);
+
+    if (!parsed.success) {
+      return parsed.response;
     }
+
+    const name = parsed.data.name;
+    const email = parsed.data.email.trim().toLowerCase();
+    const password = parsed.data.password;
 
     const existingUser = await db.user.findUnique({
       where: { email },
@@ -40,7 +37,7 @@ export async function POST(request: Request) {
         {
           error: "An account with this email already exists.",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -91,16 +88,27 @@ export async function POST(request: Request) {
         },
       });
 
-      return newUser;
+      return { user: newUser, workspaceId: workspace.id };
+    });
+
+    await createAuditLog({
+      workspaceId: user.workspaceId,
+      userId: user.user.id,
+      action: "USER_CREATED",
+      entityType: "USER",
+      entityId: user.user.id,
+      metadata: {
+        method: "signup",
+      },
     });
 
     return NextResponse.json(
       {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+        id: user.user.id,
+        name: user.user.name,
+        email: user.user.email,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Signup error:", error);
@@ -109,7 +117,7 @@ export async function POST(request: Request) {
       {
         error: "Something went wrong.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

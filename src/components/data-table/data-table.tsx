@@ -14,6 +14,7 @@ import { SelectCheckbox } from "./select-checkbox";
 import { BulkActionToolbar } from "./bulk-action-toolbar";
 import { ExportMenu } from "./export-menu";
 import { downloadFile } from "@/lib/download-file";
+import { tableResourceToExportResource } from "@/lib/export/validation";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 
 type BulkAction = {
@@ -34,6 +35,8 @@ type DataTableProps<T> = {
   bulkActions?: BulkAction[];
   searchPlaceholder?: string;
   renderFilters?: React.ReactNode;
+  filterPanel?: React.ReactNode;
+  filterChips?: React.ReactNode;
 };
 
 export function DataTable<T>({
@@ -48,6 +51,8 @@ export function DataTable<T>({
   bulkActions = [],
   searchPlaceholder = "Search...",
   renderFilters,
+  filterPanel,
+  filterChips,
 }: DataTableProps<T>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -261,10 +266,52 @@ export function DataTable<T>({
   }
 
   function handleExportFiltered() {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("page");
-    params.delete("pageSize");
-    window.open(`/api/${resource}/export?${params.toString()}`, "_blank");
+    const exportResource = tableResourceToExportResource(resource);
+
+    if (!exportResource) {
+      window.alert("Exports are not available for this table.");
+      return;
+    }
+
+    const filters: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      if (!["page", "pageSize", "columns"].includes(key) && value) {
+        filters[key] = value;
+      }
+    });
+
+    setBulkLoading(true);
+
+    void fetch("/api/exports", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        resource: exportResource,
+        format: "CSV",
+        filters,
+      }),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message ?? data.error ?? "Export failed.");
+        }
+
+        if (data.job?.status === "FAILED") {
+          throw new Error(data.job.errorMessage ?? "Export failed.");
+        }
+
+        router.push(`/dashboard/exports?job=${data.job.id}`);
+      })
+      .catch((error) => {
+        window.alert(error instanceof Error ? error.message : "Export failed.");
+      })
+      .finally(() => {
+        setBulkLoading(false);
+      });
   }
 
   const activeColumns = useMemo(
@@ -293,6 +340,16 @@ export function DataTable<T>({
           onSearchChange={setInputSearch}
           activeFilters={activeFilterCount}
           searchPlaceholder={searchPlaceholder}
+          filterSlot={filterPanel}
+          hideClearButton={Boolean(filterPanel)}
+          exportSlot={
+            <ExportMenu
+              selectedCount={selectedCount}
+              onExportSelected={handleExportSelected}
+              onExportFiltered={handleExportFiltered}
+              disabled={bulkLoading}
+            />
+          }
           onFilterClick={() => {
             setShowFilters(!showFilters);
             setShowColumns(false);
@@ -305,9 +362,11 @@ export function DataTable<T>({
         />
       )}
 
-      {!loading && (showFilters || showColumns) && (
+      {filterChips}
+
+      {!loading && ((showFilters && renderFilters && !filterPanel) || showColumns) && (
         <div className="relative border-b px-4 py-4">
-          {showFilters && renderFilters}
+          {showFilters && !filterPanel && renderFilters}
           {showColumns && (
             <ColumnVisibility
               columns={columns}
@@ -430,16 +489,6 @@ export function DataTable<T>({
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />
-      {!loading && selectedCount === 0 && bulkActions.length > 0 && (
-        <div className="flex items-center justify-end border-t px-4 py-3">
-          <ExportMenu
-            selectedCount={selectedCount}
-            onExportSelected={handleExportSelected}
-            onExportFiltered={handleExportFiltered}
-            disabled={bulkLoading}
-          />
-        </div>
-      )}
     </div>
   );
 }

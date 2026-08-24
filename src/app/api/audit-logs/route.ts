@@ -1,78 +1,92 @@
-import { NextResponse } from "next/server";
-
+import { getCurrentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/auth/permissions";
+import { getCurrentWorkspace } from "@/lib/current-workspace";
+import { getAuditLogs } from "@/services/audit.service";
+import { paginationSchema } from "@/lib/validation/common";
+import { apiErrorResponse } from "@/lib/api-error";
+import { sanitizeSearchQuery } from "@/lib/security/security";
 import { AuditAction } from "@prisma/client";
 
-import { getCurrentWorkspace } from "@/lib/current-workspace";
-
-import { requireWorkspaceRole } from "@/lib/workspace-permissions";
-
-import { getAuditLogs } from "@/services/audit.service";
-
-export async function GET(
-  request: Request,
-) {
+export async function GET(request: Request) {
   try {
-    const workspace =
-      await getCurrentWorkspace();
+    const user = await getCurrentUser();
 
-    await requireWorkspaceRole(
-      workspace.id,
-      workspace.userId,
-      "ADMIN",
-    );
+    if (!user) {
+      return Response.json(
+        {
+          message: "Unauthorized",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
 
-    const url =
-      new URL(request.url);
+    const workspace = await getCurrentWorkspace();
 
-    const search =
-      url.searchParams.get("search") ??
-      undefined;
+    if (!hasPermission(workspace.role, "audit.read")) {
+      return Response.json(
+        {
+          message: "Forbidden",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
 
-    const action =
-      url.searchParams.get("action") as
-        | AuditAction
-        | undefined;
+    const url = new URL(request.url);
+    const parsed = paginationSchema.safeParse({
+      page: url.searchParams.get("page") ?? "1",
+      pageSize:
+        url.searchParams.get("pageSize") ??
+        url.searchParams.get("limit") ??
+        "20",
+    });
 
-    const page = Math.max(
-      1,
-      Number(
-        url.searchParams.get("page") ?? 1,
-      ),
-    );
+    if (!parsed.success) {
+      return Response.json(
+        {
+          message: "Invalid pagination.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
-    const limit = Math.min(
-      100,
-      Math.max(
-        1,
-        Number(
-          url.searchParams.get("limit") ?? 25,
-        ),
-      ),
-    );
+    const { page, pageSize } = parsed.data;
+    const searchValue = url.searchParams.get("search");
+    const actionParam = url.searchParams.get("action");
+    const action = isAuditAction(actionParam) ? actionParam : undefined;
 
-    const result = await getAuditLogs(
-      workspace.id,
-      {
-        search,
-        action,
+    const result = await getAuditLogs(workspace.id, {
+      search: searchValue ? sanitizeSearchQuery(searchValue) : undefined,
+      action,
+      page,
+      limit: pageSize,
+    });
+
+    return Response.json({
+      data: result.logs,
+      logs: result.logs,
+      pagination: {
         page,
-        limit,
+        pageSize,
+        total: result.total,
+        totalPages: result.totalPages,
       },
-    );
-
-    return NextResponse.json(result);
+    });
   } catch (error) {
-    console.error(
-      "GET /api/audit-logs",
-      error,
-    );
-
-    return NextResponse.json(
-      {
-        error:
-          "Unable to load audit logs.",
-      },
-      { status: 403 },
-    );
+    console.error("Audit log error:", error);
+    return apiErrorResponse(error, "Unable to load audit logs.");
   }
+}
+
+function isAuditAction(value: string | null): value is AuditAction {
+  if (!value) {
+    return false;
+  }
+
+  return (Object.values(AuditAction) as string[]).includes(value);
 }

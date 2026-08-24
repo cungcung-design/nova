@@ -31,6 +31,10 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
+.env
+.env.local
+.env.production
+.env*.local
 .env*
 !.env.example
 
@@ -39,6 +43,9 @@ yarn-error.log*
 
 # auth cookies
 cookies*.txt
+
+# local export files
+.data/
 
 # typescript
 *.tsbuildinfo

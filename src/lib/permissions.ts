@@ -103,6 +103,22 @@ export const permissions = {
     ],
   },
 
+  reports: {
+    view: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+      UserRole.MANAGER,
+      UserRole.MEMBER,
+      UserRole.VIEWER,
+    ],
+
+    export: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+      UserRole.MANAGER,
+    ],
+  },
+
   team: {
     view: [
       UserRole.OWNER,
@@ -133,6 +149,13 @@ export const permissions = {
 
     manage: [
       UserRole.OWNER,
+    ],
+  },
+
+  audit: {
+    view: [
+      UserRole.OWNER,
+      UserRole.ADMIN,
     ],
   },
 } as const;

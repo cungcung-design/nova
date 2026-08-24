@@ -11,6 +11,8 @@ import {
 } from "@/services/customer.service";
 
 import { customerSchema } from "@/lib/validations/customer";
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 type Context = {
   params: Promise<{
@@ -95,14 +97,19 @@ export async function PATCH(
       parsed.data,
     );
 
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "CUSTOMER_UPDATED",
+      entityType: "CUSTOMER",
+      entityId: customerId,
+    });
+
     return NextResponse.json({
       success: true,
     });
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to update customer." },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to update customer.");
   }
 }
 
@@ -138,13 +145,18 @@ export async function DELETE(
       customerId,
     );
 
+    await createAuditLog({
+      workspaceId: workspace.id,
+      userId: workspace.userId,
+      action: "CUSTOMER_DELETED",
+      entityType: "CUSTOMER",
+      entityId: customerId,
+    });
+
     return NextResponse.json({
       success: true,
     });
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to delete customer." },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to delete customer.");
   }
 }

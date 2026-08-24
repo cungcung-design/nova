@@ -2,6 +2,9 @@ import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { createAuditLog } from "@/lib/audit/audit-service";
+import { rateLimit } from "@/lib/security/rate-limit";
+import { emailSchema } from "@/lib/validation/auth";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
@@ -22,8 +25,22 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const email = String(credentials.email).trim().toLowerCase();
+        const parsedEmail = emailSchema.safeParse(
+          String(credentials.email).trim().toLowerCase(),
+        );
+
+        if (!parsedEmail.success) {
+          return null;
+        }
+
+        const email = parsedEmail.data;
         const password = String(credentials.password);
+
+        const limit = await rateLimit(`login:${email}`, 10, 60);
+
+        if (!limit.success) {
+          return null;
+        }
 
         try {
           const user = await db.user.findUnique({
@@ -31,6 +48,10 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user?.passwordHash) {
+            await createAuditLog({
+              action: "AUTH_LOGIN_FAILED",
+              metadata: { email },
+            });
             return null;
           }
 
@@ -40,6 +61,17 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!validPassword) {
+            const membership = await db.membership.findFirst({
+              where: { userId: user.id },
+              orderBy: { createdAt: "asc" },
+            });
+
+            await createAuditLog({
+              action: "AUTH_LOGIN_FAILED",
+              workspaceId: membership?.workspaceId,
+              userId: user.id,
+              metadata: { email },
+            });
             return null;
           }
 
@@ -69,6 +101,49 @@ export const authOptions: NextAuthOptions = {
         session.user.id = (token.id as string | undefined) ?? token.sub ?? "";
       }
       return session;
+    },
+  },
+
+  events: {
+    async signIn({ user }) {
+      if (!user.id) {
+        return;
+      }
+
+      const membership = await db.membership.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: "asc" },
+      });
+
+      await createAuditLog({
+        workspaceId: membership?.workspaceId,
+        userId: user.id,
+        action: "AUTH_LOGIN",
+        metadata: {
+          method: "password",
+        },
+      });
+    },
+
+    async signOut({ token }) {
+      const userId =
+        (token?.id as string | undefined) ??
+        (token?.sub as string | undefined);
+
+      if (!userId) {
+        return;
+      }
+
+      const membership = await db.membership.findFirst({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+      });
+
+      await createAuditLog({
+        workspaceId: membership?.workspaceId,
+        userId,
+        action: "AUTH_LOGOUT",
+      });
     },
   },
 

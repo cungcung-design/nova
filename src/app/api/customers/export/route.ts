@@ -31,6 +31,9 @@ import type {
   ExportRequest,
 } from "@/types/export";
 
+import { getCustomerFilters } from "@/lib/filters";
+import { getCustomers } from "@/services/customer.service";
+
 export async function GET(
   request: Request,
 ) {
@@ -65,160 +68,81 @@ export async function GET(
     const url = new URL(
       request.url,
     );
+    const filters = getCustomerFilters(url.searchParams);
 
-    const search =
-      url.searchParams
-        .get("search")
-        ?.trim() ?? "";
+    const result = await getCustomers({
+      workspaceId: workspace.id,
+      search: filters.search,
+      statuses: filters.statuses,
+      page: 1,
+      pageSize: 10000,
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
+      minRevenue: filters.minRevenue,
+      maxRevenue: filters.maxRevenue,
+    });
 
-    const status =
-      url.searchParams.get("status");
-    const dateFrom =
-      url.searchParams.get("dateFrom");
-    const dateTo =
-      url.searchParams.get("dateTo");
+    const csv = createCsv(
+      [
+        "ID",
+        "Name",
+        "Email",
+        "Status",
+        "Created At",
+      ],
+      result.customers.map(
+        (customer) => [
+          customer.id,
+          customer.name,
+          customer.email,
+          customer.status,
+          customer
+            .createdAt
+            .toISOString(),
+        ],
+      ),
+    );
 
-    return await db.$transaction(
-      async (tx) => {
-        const where: {
-          workspaceId: string;
-          status?: "ACTIVE" | "INACTIVE" | "LEAD";
-          createdAt?: {
-            gte?: Date;
-            lt?: Date;
-          };
-          OR?: Array<{
-            name?: { contains: string; mode: "insensitive" };
-            email?: { contains: string; mode: "insensitive" };
-          }>;
-        } = {
-          workspaceId:
-            workspace
-              .id,
-        };
+    await db.auditLog.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: workspace.userId,
+        action: AuditAction.EXPORT_DATA,
+        entity: "Customer",
+        description: `Exported ${result.customers.length} customers.`,
+        metadata: {
+          scope: "filtered",
+          count: result.customers.length,
+          ...(filters.search ? { search: filters.search } : {}),
+          ...(filters.status ? { status: filters.status } : {}),
+          ...(filters.minRevenue != null ? { minRevenue: filters.minRevenue } : {}),
+          ...(filters.maxRevenue != null ? { maxRevenue: filters.maxRevenue } : {}),
+          ...(filters.createdFrom ? { createdFrom: filters.createdFrom } : {}),
+          ...(filters.createdTo ? { createdTo: filters.createdTo } : {}),
+        },
+      },
+    });
 
-        if (status === "ACTIVE" || status === "INACTIVE" || status === "LEAD") {
-          where.status = status;
-        }
+    return new NextResponse(
+      csv,
+      {
+        status: 200,
 
-        if (dateFrom || dateTo) {
-          where.createdAt = {
-            ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
-            ...(dateTo
-              ? { lt: new Date(new Date(dateTo).getTime() + 24 * 60 * 60 * 1000) }
-              : {}),
-          };
-        }
+        headers: {
+          "Content-Type":
+            "text/csv; charset=utf-8",
 
-        if (search) {
-          where.OR = [
-            {
-              name: {
-                contains:
-                  search,
-                mode: "insensitive",
-              },
-            },
-            {
-              email: {
-                contains:
-                  search,
-                mode: "insensitive",
-              },
-            },
-          ];
-        }
+          "Content-Disposition":
+            `attachment; filename="customers-${new Date()
+              .toISOString()
+              .slice(
+                0,
+                10,
+              )}.csv"`,
 
-        const customers =
-          await tx.customer.findMany(
-            {
-              where,
-              orderBy: {
-                createdAt:
-                  "desc",
-              },
-              take: 10000,
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                createdAt:
-                  true,
-                status: true,
-              },
-            },
-          );
-
-        const csv = createCsv(
-          [
-            "ID",
-            "Name",
-            "Email",
-            "Status",
-            "Created At",
-          ],
-          customers.map(
-            (customer) => [
-              customer.id,
-              customer.name,
-              customer.email,
-              customer.status,
-              customer
-                .createdAt
-                .toISOString(),
-            ],
-          ),
-        );
-
-        await tx.auditLog.create(
-          {
-            data: {
-              workspaceId:
-                workspace
-                  .id,
-              userId:
-                workspace
-                  .userId,
-              action:
-                AuditAction
-                  .EXPORT_DATA,
-              entity:
-                "Customer",
-              description: `Exported ${customers.length} customers.`,
-              metadata: {
-                scope:
-                  "filtered",
-                search,
-                count:
-                  customers
-                    .length,
-              },
-            },
-          },
-        );
-
-        return new NextResponse(
-          csv,
-          {
-            status: 200,
-
-            headers: {
-              "Content-Type":
-                "text/csv; charset=utf-8",
-
-              "Content-Disposition":
-                `attachment; filename="customers-${new Date()
-                  .toISOString()
-                  .slice(
-                    0,
-                    10,
-                  )}.csv"`,
-
-              "Cache-Control":
-                "no-store",
-            },
-          },
-        );
+          "Cache-Control":
+            "no-store",
+        },
       },
     );
   } catch (error) {

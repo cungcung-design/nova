@@ -1,31 +1,103 @@
 import { db } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import type { CustomerStatus, Prisma } from "@prisma/client";
+import { toNumber } from "@/lib/utils";
 
-type CustomerFilters = {
+type GetCustomersParams = {
   workspaceId: string;
   search?: string;
-  status?: "ACTIVE" | "INACTIVE" | "LEAD";
+  statuses?: Array<"ACTIVE" | "INACTIVE" | "LEAD">;
   page?: number;
   pageSize?: number;
   sortBy?: string;
   sortDirection?: "asc" | "desc";
-  dateFrom?: string;
-  dateTo?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  minRevenue?: number;
+  maxRevenue?: number;
 };
+
+function startOfUtcDay(value: string) {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+function exclusiveEndOfUtcDay(value: string) {
+  return new Date(startOfUtcDay(value).getTime() + 24 * 60 * 60 * 1000);
+}
+
+async function getCustomerIdsByRevenue(
+  workspaceId: string,
+  minRevenue?: number,
+  maxRevenue?: number,
+) {
+  const grouped = await db.order.groupBy({
+    by: ["customerId"],
+    where: {
+      workspaceId,
+      status: { not: "CANCELLED" },
+    },
+    _sum: {
+      total: true,
+    },
+  });
+
+  const matchingFromOrders = grouped
+    .filter((row) => {
+      const revenue = toNumber(row._sum.total);
+      if (minRevenue != null && revenue < minRevenue) {
+        return false;
+      }
+      if (maxRevenue != null && revenue > maxRevenue) {
+        return false;
+      }
+      return true;
+    })
+    .map((row) => row.customerId);
+
+  const includeZeroRevenue =
+    (minRevenue == null || minRevenue <= 0) &&
+    (maxRevenue == null || maxRevenue >= 0);
+
+  if (!includeZeroRevenue) {
+    return matchingFromOrders;
+  }
+
+  const customersWithOrders = grouped.map((row) => row.customerId);
+
+  if (customersWithOrders.length === 0) {
+    return null;
+  }
+
+  const zeroOrderCustomers = await db.customer.findMany({
+    where: {
+      workspaceId,
+      id: { notIn: customersWithOrders },
+    },
+    select: { id: true },
+  });
+
+  return [
+    ...matchingFromOrders,
+    ...zeroOrderCustomers.map((customer) => customer.id),
+  ];
+}
 
 export async function getCustomers({
   workspaceId,
   search,
-  status,
+  statuses,
   page = 1,
   pageSize = 25,
   sortBy = "createdAt",
   sortDirection = "desc",
-  dateFrom,
-  dateTo,
-}: CustomerFilters) {
-  const allowedSortFields = ["createdAt", "name", "email"] as const;
-  const safeSortBy = allowedSortFields.includes(sortBy as (typeof allowedSortFields)[number])
+  createdFrom,
+  createdTo,
+  minRevenue,
+  maxRevenue,
+}: GetCustomersParams) {
+  const allowedSortFields = ["createdAt", "name", "email", "status"] as const;
+  const safeSortBy = allowedSortFields.includes(
+    sortBy as (typeof allowedSortFields)[number],
+  )
     ? sortBy
     : "createdAt";
 
@@ -33,7 +105,9 @@ export async function getCustomers({
 
   const where: Prisma.CustomerWhereInput = {
     workspaceId,
-    ...(status ? { status } : {}),
+    ...(statuses && statuses.length > 0
+      ? { status: { in: statuses as CustomerStatus[] } }
+      : {}),
     ...(search
       ? {
           OR: [
@@ -43,15 +117,37 @@ export async function getCustomers({
           ],
         }
       : {}),
-    ...(dateFrom || dateTo
+    ...(createdFrom || createdTo
       ? {
           createdAt: {
-            ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
-            ...(dateTo ? { lt: new Date(new Date(dateTo).getTime() + 24 * 60 * 60 * 1000) } : {}),
+            ...(createdFrom ? { gte: startOfUtcDay(createdFrom) } : {}),
+            ...(createdTo ? { lt: exclusiveEndOfUtcDay(createdTo) } : {}),
           },
         }
       : {}),
   };
+
+  if (minRevenue != null || maxRevenue != null) {
+    const ids = await getCustomerIdsByRevenue(
+      workspaceId,
+      minRevenue,
+      maxRevenue,
+    );
+
+    if (ids && ids.length === 0) {
+      return {
+        customers: [],
+        total: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+      };
+    }
+
+    if (ids) {
+      where.id = { in: ids };
+    }
+  }
 
   const [customers, total] = await Promise.all([
     db.customer.findMany({

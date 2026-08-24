@@ -24,11 +24,12 @@ export async function requirePlan(
   const rank = {
     FREE: 0,
     PRO: 1,
+    BUSINESS: 2,
   } as const;
 
   if (rank[subscription.plan] < rank[requiredPlan]) {
     throw new Error(
-      "This feature requires a Pro subscription.",
+      "This feature requires a higher subscription plan.",
     );
   }
 

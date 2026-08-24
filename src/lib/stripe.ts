@@ -1,9 +1,8 @@
 import Stripe from "stripe";
 
-const secretKey =
-  process.env.STRIPE_SECRET_KEY;
+import { getPaymentSecretKey } from "@/lib/payments/env";
 
-export const stripe = secretKey
-  ? new Stripe(secretKey)
-  : null;
+const secretKey = getPaymentSecretKey();
+
+export const stripe = secretKey ? new Stripe(secretKey) : null;
 
