@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-primary: #0f172a;
+  --color-primary-foreground: #ffffff;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-ring: #0f172a;
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0a0a0a;
+    --color-foreground: #f8fafc;
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+    --color-border: #334155;
+    --color-primary: #f8fafc;
+    --color-primary-foreground: #0a0a0a;
+    --color-accent: #1e293b;
+    --color-accent-foreground: #f8fafc;
+    --color-ring: #f8fafc;
+  }
+}
+
+body {
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .auth-page {
+    position: relative;
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-background);
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 24rem;
+    border-radius: 1rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
+    padding: 2rem;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      0 12px 40px rgba(0, 0, 0, 0.06);
+  }
+
+  .auth-title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-foreground);
+  }
+
+  .auth-subtitle {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-muted-foreground);
+  }
+
+  .auth-input {
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-foreground);
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .auth-input::placeholder {
+    color: var(--color-muted-foreground);
+  }
+
+  .auth-input:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .auth-input:focus {
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .auth-button {
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    background: var(--color-primary);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-primary-foreground);
+    transition: all 0.2s;
+  }
+
+  .auth-button:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .auth-button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .auth-button:disabled {
+    opacity: 0.5;
+  }
+
+  .auth-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-muted-foreground);
+  }
+
+  .auth-footer-link {
+    font-weight: 500;
+    color: var(--color-foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+  }
+
+  .auth-footer-link:hover {
+    text-decoration: none;
+  }
+
+  .auth-badge {
+    display: flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: var(--color-primary);
+    font-weight: 700;
+    color: var(--color-primary-foreground);
+  }
+
+  .auth-error {
+    border-radius: 0.5rem;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    background: rgba(254, 242, 242, 0.8);
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: #991b1b;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .auth-input:focus {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  }
+
+  .auth-error {
+    border-color: rgba(220, 38, 38, 0.4);
+    background: rgba(127, 29, 29, 0.2);
+    color: #fca5a5;
+  }
+}

@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# auth cookies
+cookies*.txt
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
