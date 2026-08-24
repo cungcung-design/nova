@@ -38,8 +38,8 @@ function Growth({
     <span
       className={`flex items-center gap-1 text-xs font-medium ${
         positive
-          ? "text-emerald-600"
-          : "text-red-600"
+          ? "text-emerald-600 dark:text-emerald-400"
+          : "text-red-600 dark:text-red-400"
       }`}
     >
       {positive ? (

@@ -1,4 +1,5 @@
 import { getCurrentWorkspace } from "@/lib/current-workspace";
+import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { WorkspaceSettingsForm } from "@/components/settings/workspace-settings-form";
 
 export default async function SettingsPage() {
@@ -17,6 +18,8 @@ export default async function SettingsPage() {
           Manage workspace preferences and configuration.
         </p>
       </div>
+
+      <AppearanceSettings />
 
       <WorkspaceSettingsForm
         name={workspace.name}

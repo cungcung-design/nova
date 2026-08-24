@@ -1,58 +1,102 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-panchang: var(--font-panchang), ui-sans-serif, system-ui, sans-serif;
   --font-excon: var(--font-excon), ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
-  --color-primary: #0f172a;
-  --color-primary-foreground: #ffffff;
-  --color-accent: #f1f5f9;
-  --color-accent-foreground: #0f172a;
-  --color-ring: #0f172a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-destructive: #dc2626;
-  --color-destructive-foreground: #ffffff;
   --radius-lg: 0.75rem;
   --radius-md: 0.5rem;
   --radius-sm: 0.25rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #0a0a0a;
-    --color-foreground: #f8fafc;
-    --color-muted: #1e293b;
-    --color-muted-foreground: #94a3b8;
-    --color-border: #334155;
-    --color-primary: #f8fafc;
-    --color-primary-foreground: #0a0a0a;
-    --color-accent: #1e293b;
-    --color-accent-foreground: #f8fafc;
-    --color-ring: #f8fafc;
-    --color-card: #0f172a;
-    --color-card-foreground: #f8fafc;
-    --color-destructive: #f87171;
-    --color-destructive-foreground: #0a0a0a;
-  }
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --ring: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #334155;
+  --primary: #f8fafc;
+  --primary-foreground: #0a0a0a;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --ring: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --destructive: #f87171;
+  --destructive-foreground: #0a0a0a;
+}
+
+.theme-light {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --ring: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
 }
 
 body {
-  color: var(--color-foreground);
-  background: var(--color-background);
+  color: var(--foreground);
+  background: var(--background);
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--border);
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]):not([type="color"]),
+  select,
+  textarea {
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
@@ -70,7 +114,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--color-background);
+    background: var(--background);
     padding-left: 1rem;
     padding-right: 1rem;
   }
@@ -79,8 +123,8 @@ body {
     width: 100%;
     max-width: 24rem;
     border-radius: 1rem;
-    border: 1px solid var(--color-border);
-    background: var(--color-card);
+    border: 1px solid var(--border);
+    background: var(--card);
     padding: 1.5rem;
     box-shadow:
       0 2px 8px rgba(0, 0, 0, 0.04),
@@ -92,42 +136,42 @@ body {
     font-size: 1.5rem;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: var(--color-foreground);
+    color: var(--foreground);
   }
 
   .auth-subtitle {
     margin-top: 0.5rem;
     text-align: center;
     font-size: 0.875rem;
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
   }
 
   .auth-input {
     height: 2.5rem;
     width: 100%;
     border-radius: 0.5rem;
-    border: 1px solid var(--color-border);
-    background: var(--color-background);
+    border: 1px solid var(--border);
+    background: var(--background);
     padding-left: 0.75rem;
     padding-right: 0.75rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
     font-size: 0.875rem;
-    color: var(--color-foreground);
+    color: var(--foreground);
     outline: none;
     transition: all 0.2s;
   }
 
   .auth-input::placeholder {
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
   }
 
   .auth-input:hover {
-    border-color: rgba(0, 0, 0, 0.2);
+    border-color: color-mix(in srgb, var(--foreground) 20%, var(--border));
   }
 
   .auth-input:focus {
-    border-color: var(--color-ring);
+    border-color: var(--ring);
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
   }
 
@@ -135,14 +179,14 @@ body {
     height: 2.5rem;
     width: 100%;
     border-radius: 0.5rem;
-    background: var(--color-primary);
+    background: var(--primary);
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-primary-foreground);
+    color: var(--primary-foreground);
     transition: all 0.2s;
   }
 
@@ -162,12 +206,12 @@ body {
     margin-top: 1.5rem;
     text-align: center;
     font-size: 0.875rem;
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
   }
 
   .auth-footer-link {
     font-weight: 500;
-    color: var(--color-foreground);
+    color: var(--foreground);
     text-decoration: none;
   }
 
@@ -183,13 +227,13 @@ body {
     justify-content: center;
     overflow: hidden;
     border-radius: 0.75rem;
-    background: var(--color-primary);
+    background: var(--primary);
     font-family: var(--font-panchang), ui-sans-serif, system-ui, sans-serif;
     font-size: 1.25rem;
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0;
-    color: var(--color-primary-foreground);
+    color: var(--primary-foreground);
   }
 
   .auth-error {
@@ -217,20 +261,18 @@ body {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .auth-input:focus {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
-  }
+.dark .auth-input:focus {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
 
-  .auth-error {
-    border-color: rgba(220, 38, 38, 0.4);
-    background: rgba(127, 29, 29, 0.2);
-    color: #fca5a5;
-  }
+.dark .auth-error {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fca5a5;
+}
 
-  .auth-success {
-    border-color: rgba(34, 197, 94, 0.35);
-    background: rgba(20, 83, 45, 0.25);
-    color: #86efac;
-  }
+.dark .auth-success {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(20, 83, 45, 0.25);
+  color: #86efac;
 }

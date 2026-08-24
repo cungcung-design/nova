@@ -7,6 +7,7 @@ import {
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 
 type TopbarProps = {
   isAdmin: boolean;
@@ -68,6 +69,7 @@ export default function Topbar({
         </button>
 
         <NotificationBell />
+        <ThemeToggle />
       </div>
     </header>
   );

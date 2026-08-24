@@ -89,7 +89,7 @@ export function ExportCenter() {
                     {job.fileName ? ` · ${job.fileName}` : ""}
                   </p>
                   {job.status === "FAILED" && job.errorMessage ? (
-                    <p className="mt-1 text-sm text-red-600">{job.errorMessage}</p>
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{job.errorMessage}</p>
                   ) : null}
                 </div>
 
@@ -121,9 +121,9 @@ function StatusBadge({
 }) {
   const styles: Record<ExportRecord["status"], string> = {
     PENDING: "border-muted-foreground/30 text-muted-foreground",
-    PROCESSING: "border-amber-500 text-amber-700",
-    COMPLETED: "border-emerald-500 text-emerald-700",
-    FAILED: "border-red-500 text-red-700",
+    PROCESSING: "border-amber-500 text-amber-700 dark:text-amber-400",
+    COMPLETED: "border-emerald-500 text-emerald-700 dark:text-emerald-400",
+    FAILED: "border-red-500 text-red-700 dark:text-red-400",
   };
 
   return (

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { PaginationNav } from "@/components/data-table/table-pagination";
+
 type AuditLog = {
   id: string;
   action: string;
@@ -118,26 +120,15 @@ export function AuditLogsPage() {
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-between border-t px-5 py-4">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className="h-11 rounded-lg border px-3 text-sm disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <span className="text-xs text-muted-foreground">
+          <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <p className="text-sm tabular-nums text-muted-foreground">
               Page {page} of {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((current) => current + 1)}
-              className="h-11 rounded-lg border px-3 text-sm disabled:opacity-40"
-            >
-              Next
-            </button>
+            </p>
+            <PaginationNav
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           </div>
         </>
         )}

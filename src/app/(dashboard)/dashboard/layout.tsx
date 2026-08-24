@@ -1,10 +1,13 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import Topbar from "@/components/dashboard/topbar";
-
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { requireUser } from "@/lib/authz";
+import { parseTheme, THEME_STORAGE_KEY } from "@/lib/theme";
+import { ThemeProvider } from "@/providers/theme-provider";
 import { getUserWorkspaces } from "@/services/workspace.service";
-import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +20,8 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const cookieStore = await cookies();
+  const theme = parseTheme(cookieStore.get(THEME_STORAGE_KEY)?.value);
   const currentWorkspace = await getCurrentWorkspace();
   const workspaces = await getUserWorkspaces(user.id);
 
@@ -31,22 +36,10 @@ export default async function DashboardLayout({
     currentWorkspace.role === "OWNER" || currentWorkspace.role === "ADMIN";
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex">
-        <AppSidebar
-          currentWorkspace={{
-            id: currentWorkspace.id,
-            name: currentWorkspace.name,
-            plan: currentWorkspace.plan,
-            role: currentWorkspace.role,
-          }}
-          workspaces={workspaceData}
-        />
-
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <Topbar
-            isAdmin={isAdmin}
-            role={currentWorkspace.role}
+    <ThemeProvider initialTheme={theme}>
+      <div className="min-h-screen bg-background">
+        <div className="flex">
+          <AppSidebar
             currentWorkspace={{
               id: currentWorkspace.id,
               name: currentWorkspace.name,
@@ -56,11 +49,25 @@ export default async function DashboardLayout({
             workspaces={workspaceData}
           />
 
-          <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1">
-            {children}
-          </main>
+          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+            <Topbar
+              isAdmin={isAdmin}
+              role={currentWorkspace.role}
+              currentWorkspace={{
+                id: currentWorkspace.id,
+                name: currentWorkspace.name,
+                plan: currentWorkspace.plan,
+                role: currentWorkspace.role,
+              }}
+              workspaces={workspaceData}
+            />
+
+            <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1">
+              {children}
+            </main>
+          </div>
         </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 }

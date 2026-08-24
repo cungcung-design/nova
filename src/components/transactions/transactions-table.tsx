@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PaginationNav } from "@/components/data-table/table-pagination";
+
 type TransactionRow = {
   id: string;
   type: string;
@@ -175,29 +177,17 @@ export function TransactionsTable({
           </>
         )}
 
-        <div className="flex flex-col gap-3 border-t px-4 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-muted-foreground">{total} transactions</p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => pushFilters({ page: page - 1 })}
-              className="h-11 rounded-lg border px-3 disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <span className="text-xs text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => pushFilters({ page: page + 1 })}
-              className="h-11 rounded-lg border px-3 disabled:opacity-40"
-            >
-              Next
-            </button>
-          </div>
+        <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <p className="text-sm tabular-nums text-muted-foreground">
+            {total === 0
+              ? "No results"
+              : `${Math.min((page - 1) * pageSize + 1, total)}–${Math.min(page * pageSize, total)} of ${total}`}
+          </p>
+          <PaginationNav
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(nextPage) => pushFilters({ page: nextPage })}
+          />
         </div>
       </div>
     </div>
