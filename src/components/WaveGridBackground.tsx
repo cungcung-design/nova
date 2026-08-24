@@ -520,7 +520,13 @@ export function WaveGridBackground({
 
   return (
     <div ref={containerRef} className={cn("relative h-full w-full overflow-hidden", className)}>
-      <canvas ref={canvasRef} className="block h-full w-full" />
+      <canvas
+        ref={canvasRef}
+        width={1}
+        height={1}
+        className="block h-full w-full"
+        suppressHydrationWarning
+      />
       {children != null && (
         <div className="pointer-events-none absolute inset-0">{children}</div>
       )}
