@@ -1,5 +1,27 @@
 import { NextResponse } from "next/server";
 
+const SAFE_CLIENT_ERRORS = new Set([
+  "Customer not found.",
+  "Product not found.",
+  "One or more products were not found.",
+  "Invalid invitation.",
+  "This invitation has expired.",
+  "This invitation was sent to a different email address.",
+  "This user is already a member of the workspace.",
+  "An invitation has already been sent to this email.",
+  "Member not found.",
+  "Workspace subscription not found.",
+  "This feature requires a higher subscription plan.",
+]);
+
+function isSafeClientError(message: string) {
+  if (SAFE_CLIENT_ERRORS.has(message)) {
+    return true;
+  }
+
+  return message.endsWith("does not have enough stock.");
+}
+
 export function apiErrorResponse(error: unknown, fallback: string) {
   const message = error instanceof Error ? error.message : "";
 
@@ -36,7 +58,14 @@ export function apiErrorResponse(error: unknown, fallback: string) {
     );
   }
 
+  if (message && isSafeClientError(message)) {
+    return NextResponse.json({ error: message, message }, { status: 400 });
+  }
+
   console.error("Internal error:", error);
 
-  return NextResponse.json({ error: fallback, message: fallback }, { status: 500 });
+  return NextResponse.json(
+    { error: fallback, message: fallback },
+    { status: 500 },
+  );
 }

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { getReport } from "@/services/report.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 export async function GET(
   request: Request,
@@ -10,6 +12,11 @@ export async function GET(
   try {
     const workspace =
       await getCurrentWorkspace();
+
+    await requireRole(
+      workspace.id,
+      [...permissions.reports.view],
+    );
 
     const url =
       new URL(request.url);
@@ -32,19 +39,6 @@ export async function GET(
 
     return NextResponse.json(report);
   } catch (error) {
-    console.error(
-      "GET /api/reports",
-      error,
-    );
-
-    return NextResponse.json(
-      {
-        error:
-          "Unable to load report.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to load report.");
   }
 }

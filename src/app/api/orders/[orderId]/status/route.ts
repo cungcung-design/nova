@@ -16,6 +16,7 @@ const statusSchema = z.object({
     "SHIPPED",
     "COMPLETED",
     "CANCELLED",
+    "REFUNDED",
   ]),
 });
 

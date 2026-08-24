@@ -27,6 +27,10 @@ export default function NewOrderPage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [productQuery, setProductQuery] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState("");
 
   const [customerId, setCustomerId] = useState("");
   const [items, setItems] = useState<CartItem[]>([]);
@@ -38,26 +42,35 @@ export default function NewOrderPage() {
 
   useEffect(() => {
     async function load() {
-      const [customersRes, productsRes] =
-        await Promise.all([
-          fetch("/api/customers"),
-          fetch("/api/products"),
+      setCatalogLoading(true);
+      setCatalogError("");
+
+      try {
+        const [customersRes, productsRes] = await Promise.all([
+          fetch("/api/customers?pageSize=100"),
+          fetch("/api/products?pageSize=100"),
         ]);
 
-      if (customersRes.ok) {
-        const data =
-          await customersRes.json();
-        setCustomers(data.customers);
-      }
+        if (!customersRes.ok || !productsRes.ok) {
+          throw new Error("Unable to load customers and products.");
+        }
 
-      if (productsRes.ok) {
-        const data =
-          await productsRes.json();
-        setProducts(data.products);
+        const customerData = await customersRes.json();
+        const productData = await productsRes.json();
+        setCustomers(customerData.customers ?? []);
+        setProducts(productData.products ?? []);
+      } catch (loadError) {
+        setCatalogError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load customers and products.",
+        );
+      } finally {
+        setCatalogLoading(false);
       }
     }
 
-    load();
+    void load();
   }, []);
 
   function addItem(product: Product) {
@@ -186,13 +199,23 @@ export default function NewOrderPage() {
                 )
               }
               required
-              className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none"
+              className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none"
             >
               <option value="">
-                Select customer
+                {catalogLoading
+                  ? "Loading customers..."
+                  : customers.length === 0
+                    ? "No customers found"
+                    : "Select customer"}
               </option>
 
-              {customers.map(
+              {customers
+                .filter((customer) =>
+                  customer.name
+                    .toLowerCase()
+                    .includes(customerQuery.toLowerCase()),
+                )
+                .map(
                 (customer) => (
                   <option
                     key={
@@ -207,6 +230,13 @@ export default function NewOrderPage() {
                 ),
               )}
             </select>
+            <input
+              type="search"
+              value={customerQuery}
+              onChange={(event) => setCustomerQuery(event.target.value)}
+              placeholder="Filter customers"
+              className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none"
+            />
           </div>
         </div>
 
@@ -302,15 +332,31 @@ export default function NewOrderPage() {
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {products
+          <div className="flex flex-col gap-2">
+            <input
+              type="search"
+              value={productQuery}
+              onChange={(event) => setProductQuery(event.target.value)}
+              placeholder="Filter products"
+              className="h-11 max-w-sm rounded-lg border bg-background px-3 text-sm outline-none"
+            />
+            <div className="flex flex-wrap gap-2">
+            {catalogLoading ? (
+              <p className="text-sm text-muted-foreground">Loading products...</p>
+            ) : products.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No products found.</p>
+            ) : (
+            products
               .filter(
                 (product) =>
                   !items.some(
                     (item) =>
                       item.productId ===
                       product.id,
-                  ),
+                  ) &&
+                  product.name
+                    .toLowerCase()
+                    .includes(productQuery.toLowerCase()),
               )
               .map((product) => (
                 <button
@@ -321,12 +367,14 @@ export default function NewOrderPage() {
                       product,
                     )
                   }
-                  className="rounded-lg border px-3 py-2 text-sm hover:bg-muted"
+                  className="min-h-11 rounded-lg border px-3 py-2 text-sm hover:bg-muted"
                 >
                   +{" "}
                   {product.name}
                 </button>
-              ))}
+              ))
+            )}
+            </div>
           </div>
         </section>
 
@@ -444,6 +492,12 @@ export default function NewOrderPage() {
             </div>
           </div>
         </section>
+
+        {catalogError && (
+          <div className="rounded-lg border p-3 text-sm text-destructive">
+            {catalogError}
+          </div>
+        )}
 
         {error && (
           <div className="rounded-lg border p-3 text-sm text-destructive">

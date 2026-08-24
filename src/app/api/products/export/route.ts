@@ -1,120 +1,73 @@
 import { NextResponse } from "next/server";
+import { AuditAction } from "@prisma/client";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { requireRole } from "@/lib/authz";
-import { permissions, hasPermission } from "@/lib/permissions";
-import { getProducts } from "@/services/product.service";
+import { permissions } from "@/lib/permissions";
+import { db } from "@/lib/db";
+import { createCsv } from "@/lib/csv";
+import { apiErrorResponse } from "@/lib/api-error";
+import { parseIdList } from "@/lib/validation/common";
 
-export async function GET(request: Request) {
-  try {
-    const workspace = await getCurrentWorkspace();
-
-    const membership = await requireRole(workspace.id, [...permissions.products.view]);
-
-    if (!hasPermission(membership.role, permissions.products.view)) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
-
-    const url = new URL(request.url);
-
-    const search = url.searchParams.get("search")?.trim() ?? "";
-    const status = url.searchParams.get("status");
-    const sortBy = url.searchParams.get("sortBy") ?? "createdAt";
-    const sortDirection = url.searchParams.get("sortDirection") === "asc" ? "asc" : "desc";
-
-    const allowedSortFields = ["createdAt", "name", "price", "stock"] as const;
-    const safeSortBy = allowedSortFields.includes(sortBy as (typeof allowedSortFields)[number])
-      ? sortBy
-      : "createdAt";
-
-    const result = await getProducts({
-      workspaceId: workspace.id,
-      search: search || undefined,
-      status: status || undefined,
-      page: 1,
-      pageSize: 10000,
-      sortBy: safeSortBy,
-      sortDirection,
-    });
-
-    const products = result.products;
-
-    const headers: Record<string, string> = {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="products-${new Date().toISOString().split("T")[0]}.csv"`,
-    };
-
-    const csvRows = [
-      ["Name", "SKU", "Price", "Stock", "Status", "Created At"],
-      ...products.map((p) => [
-        `"${(p.name || "").replace(/"/g, '""')}"`,
-        `"${(p.sku || "").replace(/"/g, '""')}"`,
-        Number(p.price).toFixed(2),
-        p.stock,
-        p.status,
-        new Date(p.createdAt).toISOString(),
-      ]),
-    ];
-
-    const csv = csvRows.map((row) => row.join(",")).join("\n");
-
-    return new NextResponse(csv, { headers });
-  } catch (error) {
-    console.error("GET /api/products/export", error);
-    return NextResponse.json(
-      { error: "Export failed." },
-      { status: 500 }
-    );
-  }
+function csvResponse(csv: string, filename: string) {
+  return new NextResponse(csv, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 export async function POST(request: Request) {
   try {
     const workspace = await getCurrentWorkspace();
+    await requireRole(workspace.id, [...permissions.reports.export]);
 
-    const membership = await requireRole(workspace.id, [...permissions.products.view]);
+    const body = (await request.json()) as { ids?: unknown };
+    const parsed = parseIdList(body.ids, 100);
 
-    if (!hasPermission(membership.role, permissions.products.view)) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const body = (await request.json()) as { ids?: string[] };
-    const ids = Array.isArray(body.ids) ? body.ids : [];
-
-    if (ids.length === 0) {
-      return NextResponse.json({ error: "No products selected." }, { status: 400 });
-    }
-
-    const result = await getProducts({
-      workspaceId: workspace.id,
-      page: 1,
-      pageSize: 10000,
+    const products = await db.product.findMany({
+      where: {
+        workspaceId: workspace.id,
+        id: { in: parsed.ids },
+      },
+      orderBy: { createdAt: "desc" },
     });
 
-    const products = result.products.filter((product) => ids.includes(product.id));
-
-    const headers: Record<string, string> = {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="products-${new Date().toISOString().split("T")[0]}.csv"`,
-    };
-
-    const csvRows = [
+    const csv = createCsv(
       ["Name", "SKU", "Price", "Stock", "Status", "Created At"],
-      ...products.map((p) => [
-        `"${(p.name || "").replace(/"/g, '""')}"`,
-        `"${(p.sku || "").replace(/"/g, '""')}"`,
-        Number(p.price).toFixed(2),
-        p.stock,
-        p.status,
-        new Date(p.createdAt).toISOString(),
+      products.map((product) => [
+        product.name,
+        product.sku,
+        Number(product.price).toFixed(2),
+        product.stock,
+        product.status,
+        product.createdAt.toISOString(),
       ]),
-    ];
+    );
 
-    const csv = csvRows.map((row) => row.join(",")).join("\n");
+    await db.auditLog.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: workspace.userId,
+        action: AuditAction.EXPORT_DATA,
+        entity: "Product",
+        description: `Exported ${products.length} products.`,
+        metadata: { count: products.length },
+      },
+    });
 
-    return new NextResponse(csv, { headers });
+    return csvResponse(
+      csv,
+      `products-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
   } catch (error) {
-    console.error("POST /api/products/export", error);
-    return NextResponse.json({ error: "Export failed." }, { status: 500 });
+    return apiErrorResponse(error, "Export failed.");
   }
 }

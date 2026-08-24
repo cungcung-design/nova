@@ -11,6 +11,7 @@ type Props = {
   status: string;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
+  canManage: boolean;
 };
 
 export function BillingClient({
@@ -18,6 +19,7 @@ export function BillingClient({
   status,
   cancelAtPeriodEnd,
   currentPeriodEnd,
+  canManage,
 }: Props) {
   const [loading, setLoading] = useState<"checkout" | "portal" | string | null>(
     null,
@@ -94,13 +96,19 @@ export function BillingClient({
           <p className="mt-1 text-sm text-muted-foreground">
             We couldn&apos;t process your latest payment. Please update billing.
           </p>
-          <button
-            type="button"
-            onClick={() => void openPortal()}
-            className="mt-4 inline-flex h-10 items-center rounded-xl bg-foreground px-4 text-sm font-medium text-background"
-          >
-            Manage billing
-          </button>
+          {canManage ? (
+            <button
+              type="button"
+              onClick={() => void openPortal()}
+              className="mt-4 inline-flex h-11 items-center rounded-xl bg-foreground px-4 text-sm font-medium text-background"
+            >
+              Manage billing
+            </button>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Ask the workspace owner to update billing.
+            </p>
+          )}
         </div>
       )}
 
@@ -131,7 +139,7 @@ export function BillingClient({
             </div>
           </div>
 
-          {isPaid ? (
+          {isPaid && canManage ? (
             <button
               type="button"
               onClick={() => void openPortal()}
@@ -230,7 +238,7 @@ export function BillingClient({
                 >
                   {current ? "Current plan" : "Included"}
                 </button>
-              ) : (
+              ) : canManage ? (
                 <button
                   type="button"
                   disabled={current || loading !== null}
@@ -248,6 +256,10 @@ export function BillingClient({
                     "Choose plan"
                   )}
                 </button>
+              ) : (
+                <p className="mt-8 text-sm text-muted-foreground">
+                  Only the workspace owner can change the plan.
+                </p>
               )}
             </div>
           );

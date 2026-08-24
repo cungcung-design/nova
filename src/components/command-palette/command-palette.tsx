@@ -66,6 +66,8 @@ export function CommandPalette({
   const [query, setQuery] =
     useState("");
 
+  const [activeIndex, setActiveIndex] = useState(0);
+
   const [searchResults, setSearchResults] =
     useState<SearchResults>({
       customers: [],
@@ -181,6 +183,24 @@ export function CommandPalette({
         },
 
         {
+          id: "exports",
+          title: "Exports",
+          description: "Download generated reports",
+          href: "/dashboard/exports",
+          icon: FileText,
+          keywords: ["csv", "download", "export"],
+        },
+
+        {
+          id: "activity",
+          title: "Activity",
+          description: "View workspace activity",
+          href: "/dashboard/activity",
+          icon: Bell,
+          keywords: ["timeline", "feed"],
+        },
+
+        {
           id: "settings",
           title: "Settings",
           description:
@@ -195,6 +215,14 @@ export function CommandPalette({
 
         ...(isAdmin
           ? [
+              {
+                id: "team",
+                title: "Team",
+                description: "Manage workspace members",
+                href: "/dashboard/settings/team",
+                icon: Users,
+                keywords: ["members", "invite"],
+              },
               {
                 id: "billing",
                 title: "Billing",
@@ -332,10 +360,8 @@ export function CommandPalette({
           "k"
       ) {
         event.preventDefault();
-
-        setOpen(
-          (current) => !current,
-        );
+        setActiveIndex(0);
+        setOpen((current) => !current);
       }
 
       if (
@@ -480,7 +506,7 @@ export function CommandPalette({
         </span>
 
         <kbd className="ml-4 rounded border bg-muted px-1.5 py-0.5 text-[10px]">
-          Ctrl K
+          ⌘K
         </kbd>
       </button>
 
@@ -503,13 +529,31 @@ export function CommandPalette({
               <input
                 id="command-search-input"
                 value={query}
-                onChange={(event) =>
-                  setQuery(
-                    event
-                      .target
-                      .value,
-                  )
-                }
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setActiveIndex(0);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setActiveIndex((current) =>
+                      Math.min(filteredCommands.length - 1, current + 1),
+                    );
+                  }
+
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActiveIndex((current) => Math.max(0, current - 1));
+                  }
+
+                  if (event.key === "Enter") {
+                    const command = filteredCommands[activeIndex];
+                    if (command) {
+                      event.preventDefault();
+                      executeCommand(command);
+                    }
+                  }
+                }}
                 placeholder="Search anything..."
                 className="h-14 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
               />
@@ -630,7 +674,7 @@ export function CommandPalette({
               ) : (
                 <div className="space-y-1">
                   {filteredCommands.map(
-                    (command) => {
+                    (command, index) => {
                       const Icon =
                         command.icon;
 
@@ -645,7 +689,11 @@ export function CommandPalette({
                               command,
                             )
                           }
-                          className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-muted"
+                          className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
+                            index === activeIndex
+                              ? "bg-muted"
+                              : "hover:bg-muted"
+                          }`}
                         >
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-background">
                             <Icon className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground" />

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requireUser } from "@/lib/authz";
-
-import {
-  setActiveWorkspaceId,
-  getUserWorkspaces,
-} from "@/lib/workspace-context";
+import { apiErrorResponse } from "@/lib/api-error";
+import { idSchema } from "@/lib/validation/common";
+import { setActiveWorkspaceId } from "@/lib/workspace-context";
+import { getWorkspaceForUser } from "@/services/workspace.service";
 
 export async function POST(request: Request) {
   try {
@@ -13,11 +12,9 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const workspaceId = String(
-      body.workspaceId ?? "",
-    );
+    const parsedId = idSchema.safeParse(body.workspaceId);
 
-    if (!workspaceId) {
+    if (!parsedId.success) {
       return NextResponse.json(
         {
           error: "Workspace ID is required.",
@@ -26,15 +23,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const memberships =
-      await getUserWorkspaces(user.id);
+    const workspaceId = parsedId.data;
+    const workspace = await getWorkspaceForUser(user.id, workspaceId);
 
-    const membership = memberships.find(
-      (item) =>
-        item.workspace.id === workspaceId,
-    );
-
-    if (!membership) {
+    if (!workspace) {
       return NextResponse.json(
         {
           error:
@@ -50,17 +42,6 @@ export async function POST(request: Request) {
       success: true,
     });
   } catch (error) {
-    console.error(
-      "POST /api/workspaces/switch",
-      error,
-    );
-
-    return NextResponse.json(
-      {
-        error:
-          "Unable to switch workspace.",
-      },
-      { status: 500 },
-    );
+    return apiErrorResponse(error, "Unable to switch workspace.");
   }
 }

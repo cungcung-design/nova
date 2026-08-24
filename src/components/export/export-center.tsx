@@ -11,15 +11,25 @@ export function ExportCenter() {
 
   const [jobs, setJobs] = useState<ExportRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
         const response = await fetch("/api/exports");
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "Unable to load exports.");
+        }
+
         setJobs(data.jobs ?? []);
-      } catch (error) {
-        console.error(error);
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load exports.",
+        );
       } finally {
         setLoading(false);
       }
@@ -54,6 +64,8 @@ export function ExportCenter() {
               />
             ))}
           </div>
+        ) : error ? (
+          <div className="p-12 text-center text-sm text-destructive">{error}</div>
         ) : jobs.length === 0 ? (
           <div className="p-12 text-center">
             <h3 className="font-semibold">No exports yet</h3>

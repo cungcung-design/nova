@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
 import { markNotificationRead } from "@/services/notification.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 type Props = {
   params: Promise<{
@@ -19,21 +19,23 @@ export async function PATCH(
 
     const workspace = await getCurrentWorkspace();
 
-    await markNotificationRead(notificationId, workspace.userId);
+    const result = await markNotificationRead(
+      notificationId,
+      workspace.userId,
+      workspace.id,
+    );
+
+    if (result.count === 0) {
+      return NextResponse.json(
+        { error: "Notification not found." },
+        { status: 404 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
     });
   } catch (error) {
-    console.error("PATCH notification", error);
-
-    return NextResponse.json(
-      {
-        error: "Unable to update notification.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to update notification.");
   }
 }

@@ -115,7 +115,7 @@ export function StatCards({
                   {card.title}
                 </p>
 
-                <p className="mt-3 text-2xl font-semibold tracking-tight">
+                <p className="mt-3 break-all text-2xl font-semibold tracking-tight">
                   {card.value}
                 </p>
               </div>

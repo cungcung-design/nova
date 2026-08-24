@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { getReport } from "@/services/report.service";
 
 import { ReportHeader } from "@/components/reports/report-header";
@@ -35,6 +37,7 @@ export default async function ReportsPage({
 
   const workspace =
     await getCurrentWorkspace();
+  await requireRole(workspace.id, [...permissions.reports.view]);
 
   const report =
     await getReport(
@@ -44,7 +47,9 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-8 p-6 lg:p-8">
-      <ReportHeader range={range} />
+      <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-muted" />}>
+        <ReportHeader range={range} />
+      </Suspense>
 
       <ReportStats
         summary={report.summary}

@@ -6,7 +6,7 @@ import { signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { mainNavigation } from "@/config/navigation";
+import { isNavItemVisible, mainNavigation } from "@/config/navigation";
 import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 
 type AppSidebarProps = {
@@ -63,16 +63,7 @@ export function AppSidebar({
 
             <div className="space-y-1">
               {section.items
-                .filter((item) => {
-                  if (item.href !== "/dashboard/audit-logs") {
-                    return true;
-                  }
-
-                  return (
-                    currentWorkspace.role === "OWNER" ||
-                    currentWorkspace.role === "ADMIN"
-                  );
-                })
+                .filter((item) => isNavItemVisible(item.href, currentWorkspace.role))
                 .map((item) => {
                 const Icon = item.icon;
 

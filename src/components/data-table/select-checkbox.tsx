@@ -25,7 +25,7 @@ export function SelectCheckbox({
       }}
       onChange={onChange}
       aria-label={label}
-      className="h-4 w-4 rounded border"
+      className="h-5 w-5 rounded border"
     />
   );
 }

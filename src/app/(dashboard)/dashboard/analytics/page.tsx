@@ -1,11 +1,10 @@
+import { Suspense } from "react";
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { getAnalytics } from "@/services/analytics.service";
-
 import { AnalyticsHeader } from "@/components/dashboard/analytics-header";
-
 import { StatCards } from "@/components/dashboard/stat-cards";
-
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 
 type Props = {
@@ -20,6 +19,7 @@ export default async function AnalyticsPage({
   const params = await searchParams;
 
   const workspace = await getCurrentWorkspace();
+  await requireRole(workspace.id, [...permissions.reports.view]);
 
   const range =
     params.range === "7"
@@ -32,7 +32,13 @@ export default async function AnalyticsPage({
 
   return (
     <div className="space-y-8 p-6 lg:p-8">
-      <AnalyticsHeader range={range} />
+      <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-muted" />}>
+        <AnalyticsHeader
+          range={range}
+          title="Analytics"
+          description="Track revenue, customers, and order performance."
+        />
+      </Suspense>
 
       <StatCards summary={analytics.summary} />
 

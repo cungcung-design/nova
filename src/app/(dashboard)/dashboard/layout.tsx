@@ -44,9 +44,19 @@ export default async function DashboardLayout({
         />
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <Topbar isAdmin={isAdmin} />
+          <Topbar
+            isAdmin={isAdmin}
+            role={currentWorkspace.role}
+            currentWorkspace={{
+              id: currentWorkspace.id,
+              name: currentWorkspace.name,
+              plan: currentWorkspace.plan,
+              role: currentWorkspace.role,
+            }}
+            workspaces={workspaceData}
+          />
 
-          <main className="flex-1">
+          <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1">
             {children}
           </main>
         </div>

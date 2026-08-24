@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { getOrderById } from "@/services/order.service";
+import { OrderStatusSelect } from "@/components/orders/order-status-select";
+import { hasPermission, permissions } from "@/lib/permissions";
 
 type Props = {
   params: Promise<{
@@ -49,9 +51,11 @@ export default async function OrderPage({
             </p>
           </div>
 
-          <span className="rounded-full border px-3 py-1 text-xs font-medium">
-            {order.status}
-          </span>
+          <OrderStatusSelect
+            orderId={order.id}
+            status={order.status}
+            canUpdate={hasPermission(workspace.role, permissions.orders.update)}
+          />
         </div>
       </div>
 
@@ -143,7 +147,7 @@ export default async function OrderPage({
           Items
         </h2>
 
-        <div className="mt-5">
+        <div className="mt-5 overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">

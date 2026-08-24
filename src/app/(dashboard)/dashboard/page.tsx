@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 
 import {
@@ -47,7 +48,9 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8 p-6 lg:p-8">
-      <AnalyticsHeader range={range} />
+      <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-muted" />}>
+        <AnalyticsHeader range={range} />
+      </Suspense>
 
       <StatCards summary={analytics.summary} />
 

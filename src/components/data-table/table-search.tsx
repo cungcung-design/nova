@@ -17,7 +17,7 @@ export function TableSearch({ value, onChange, placeholder = "Search..." }: Tabl
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-10 w-full rounded-xl border bg-background pl-9 pr-9 text-sm outline-none transition placeholder:text-muted-foreground focus:ring-2 focus:ring-foreground/10"
+        className="h-11 w-full rounded-xl border bg-background pl-9 pr-9 text-sm outline-none transition placeholder:text-muted-foreground focus:ring-2 focus:ring-foreground/10"
       />
 
       {value && (

@@ -10,10 +10,14 @@ import { ExportButton } from "@/components/export/export-button";
 
 type Props = {
   range: 7 | 30 | 90;
+  title?: string;
+  description?: string;
 };
 
 export function AnalyticsHeader({
   range,
+  title = "Dashboard",
+  description = "Monitor your business performance and growth.",
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -30,10 +34,10 @@ export function AnalyticsHeader({
       <div>
         <p className="text-sm font-medium text-muted-foreground">Overview</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Dashboard
+          {title}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Monitor your business performance and growth.
+          {description}
         </p>
       </div>
 

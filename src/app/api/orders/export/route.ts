@@ -1,122 +1,76 @@
 import { NextResponse } from "next/server";
+import { AuditAction } from "@prisma/client";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { requireRole } from "@/lib/authz";
-import { permissions, hasPermission } from "@/lib/permissions";
-import { getOrders } from "@/services/order.service";
+import { permissions } from "@/lib/permissions";
+import { db } from "@/lib/db";
+import { createCsv } from "@/lib/csv";
+import { apiErrorResponse } from "@/lib/api-error";
+import { parseIdList } from "@/lib/validation/common";
 
-export async function GET(request: Request) {
-  try {
-    const workspace = await getCurrentWorkspace();
-
-    const membership = await requireRole(workspace.id, [...permissions.orders.view]);
-
-    if (!hasPermission(membership.role, permissions.orders.view)) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
-
-    const url = new URL(request.url);
-
-    const search = url.searchParams.get("search")?.trim() ?? "";
-    const status = url.searchParams.get("status");
-    const paymentStatus = url.searchParams.get("paymentStatus");
-    const sortBy = url.searchParams.get("sortBy") ?? "createdAt";
-    const sortDirection = url.searchParams.get("sortDirection") === "asc" ? "asc" : "desc";
-
-    const allowedSortFields = ["createdAt", "total", "status", "orderNumber"] as const;
-    const safeSortBy = allowedSortFields.includes(sortBy as (typeof allowedSortFields)[number])
-      ? sortBy
-      : "createdAt";
-
-    const result = await getOrders({
-      workspaceId: workspace.id,
-      search: search || undefined,
-      status: status || undefined,
-      paymentStatus: paymentStatus || undefined,
-      page: 1,
-      pageSize: 10000,
-      sortBy: safeSortBy,
-      sortDirection,
-    });
-
-    const orders = result.orders;
-
-    const headers: Record<string, string> = {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="orders-${new Date().toISOString().split("T")[0]}.csv"`,
-    };
-
-    const csvRows = [
-      ["Order #", "Customer", "Status", "Payment", "Total", "Created At"],
-      ...orders.map((o) => [
-        `"${(o.orderNumber || "").replace(/"/g, '""')}"`,
-        `"${(o.customer?.name || "").replace(/"/g, '""')}"`,
-        o.status,
-        o.paymentStatus,
-        Number(o.total).toFixed(2),
-        new Date(o.createdAt).toISOString(),
-      ]),
-    ];
-
-    const csv = csvRows.map((row) => row.join(",")).join("\n");
-
-    return new NextResponse(csv, { headers });
-  } catch (error) {
-    console.error("GET /api/orders/export", error);
-    return NextResponse.json(
-      { error: "Export failed." },
-      { status: 500 }
-    );
-  }
+function csvResponse(csv: string, filename: string) {
+  return new NextResponse(csv, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 export async function POST(request: Request) {
   try {
     const workspace = await getCurrentWorkspace();
+    await requireRole(workspace.id, [...permissions.reports.export]);
 
-    const membership = await requireRole(workspace.id, [...permissions.orders.view]);
+    const body = (await request.json()) as { ids?: unknown };
+    const parsed = parseIdList(body.ids, 100);
 
-    if (!hasPermission(membership.role, permissions.orders.view)) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const body = (await request.json()) as { ids?: string[] };
-    const ids = Array.isArray(body.ids) ? body.ids : [];
-
-    if (ids.length === 0) {
-      return NextResponse.json({ error: "No orders selected." }, { status: 400 });
-    }
-
-    const result = await getOrders({
-      workspaceId: workspace.id,
-      page: 1,
-      pageSize: 10000,
+    const orders = await db.order.findMany({
+      where: {
+        workspaceId: workspace.id,
+        id: { in: parsed.ids },
+      },
+      include: {
+        customer: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
     });
 
-    const orders = result.orders.filter((order) => ids.includes(order.id));
-
-    const headers: Record<string, string> = {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="orders-${new Date().toISOString().split("T")[0]}.csv"`,
-    };
-
-    const csvRows = [
+    const csv = createCsv(
       ["Order #", "Customer", "Status", "Payment", "Total", "Created At"],
-      ...orders.map((o) => [
-        `"${(o.orderNumber || "").replace(/"/g, '""')}"`,
-        `"${(o.customer?.name || "").replace(/"/g, '""')}"`,
-        o.status,
-        o.paymentStatus,
-        Number(o.total).toFixed(2),
-        new Date(o.createdAt).toISOString(),
+      orders.map((order) => [
+        order.orderNumber,
+        order.customer?.name,
+        order.status,
+        order.paymentStatus,
+        Number(order.total).toFixed(2),
+        order.createdAt.toISOString(),
       ]),
-    ];
+    );
 
-    const csv = csvRows.map((row) => row.join(",")).join("\n");
+    await db.auditLog.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: workspace.userId,
+        action: AuditAction.EXPORT_DATA,
+        entity: "Order",
+        description: `Exported ${orders.length} orders.`,
+        metadata: { count: orders.length },
+      },
+    });
 
-    return new NextResponse(csv, { headers });
+    return csvResponse(
+      csv,
+      `orders-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
   } catch (error) {
-    console.error("POST /api/orders/export", error);
-    return NextResponse.json({ error: "Export failed." }, { status: 500 });
+    return apiErrorResponse(error, "Export failed.");
   }
 }

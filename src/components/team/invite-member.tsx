@@ -1,22 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Mail, UserPlus } from "lucide-react";
 
 export function InviteMember() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const emailRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("invite") === "true") {
+      emailRef.current?.focus();
+    }
+  }, [searchParams]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
 
     setLoading(true);
     setMessage("");
+    setError("");
 
     try {
       const response = await fetch("/api/team", {
@@ -37,13 +47,21 @@ export function InviteMember() {
       }
 
       setEmail("");
-
-      setMessage("Invitation created successfully.");
-      router.refresh();
-    } catch (error) {
+      const inviteUrl =
+        (typeof data.inviteUrl === "string" && data.inviteUrl) ||
+        (typeof data.invitation?.token === "string"
+          ? `${window.location.origin}/invite/${data.invitation.token}`
+          : "");
       setMessage(
-        error instanceof Error
-          ? error.message
+        inviteUrl
+          ? `Invitation created. Share this link: ${inviteUrl}`
+          : "Invitation created successfully.",
+      );
+      router.refresh();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
           : "Something went wrong.",
       );
     } finally {
@@ -52,17 +70,14 @@ export function InviteMember() {
   }
 
   return (
-    <section className="rounded-2xl border bg-card p-6 shadow-sm">
+    <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
       <div className="flex items-center gap-3">
         <div className="rounded-xl border p-2.5">
           <UserPlus className="h-5 w-5" />
         </div>
 
         <div>
-          <h2 className="font-semibold">
-            Invite team member
-          </h2>
-
+          <h2 className="font-semibold">Invite team member</h2>
           <p className="text-sm text-muted-foreground">
             Give someone access to this workspace.
           </p>
@@ -75,14 +90,12 @@ export function InviteMember() {
       >
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
           <input
+            ref={emailRef}
             type="email"
             required
             value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="name@company.com"
             className="h-11 w-full rounded-xl border bg-background pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-foreground/10"
           />
@@ -90,18 +103,11 @@ export function InviteMember() {
 
         <select
           value={role}
-          onChange={(event) =>
-            setRole(event.target.value)
-          }
+          onChange={(event) => setRole(event.target.value)}
           className="h-11 rounded-xl border bg-background px-3 text-sm outline-none"
         >
-          <option value="MEMBER">
-            Member
-          </option>
-
-          <option value="ADMIN">
-            Admin
-          </option>
+          <option value="MEMBER">Member</option>
+          <option value="ADMIN">Admin</option>
         </select>
 
         <button
@@ -113,11 +119,10 @@ export function InviteMember() {
         </button>
       </form>
 
-      {message && (
-        <p className="mt-4 text-sm text-muted-foreground">
-          {message}
-        </p>
-      )}
+      {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+      {message ? (
+        <p className="mt-4 break-all text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </section>
   );
 }

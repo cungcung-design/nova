@@ -95,6 +95,13 @@ export async function DELETE(_request: Request, { params }: Props) {
       },
     });
 
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Member not found.", message: "Member not found." },
+        { status: 404 },
+      );
+    }
+
     await removeMember(workspace.id, memberId, workspace.userId);
 
     await createAuditLog({

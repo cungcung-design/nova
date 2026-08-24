@@ -68,8 +68,6 @@ export function ExportButton({ resource, filters }: ExportButtonProps) {
       >
         <option value="">{loading ? "Preparing..." : "Export"}</option>
         <option value="CSV">Export CSV</option>
-        <option value="XLSX">Export Excel</option>
-        <option value="PDF">Export PDF</option>
       </select>
     </div>
   );

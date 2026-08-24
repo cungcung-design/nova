@@ -5,9 +5,18 @@ import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit/audit-service";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { emailSchema } from "@/lib/validation/auth";
+import { clearActiveWorkspace } from "@/lib/workspace-context";
+
+const authSecret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
+
+if (!authSecret && process.env.NEXT_PHASE !== "phase-production-build") {
+  console.error(
+    "NEXTAUTH_SECRET or AUTH_SECRET must be set. Authentication will fail.",
+  );
+}
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
+  secret: authSecret,
   session: {
     strategy: "jwt",
   },
@@ -36,7 +45,9 @@ export const authOptions: NextAuthOptions = {
         const email = parsedEmail.data;
         const password = String(credentials.password);
 
-        const limit = await rateLimit(`login:${email}`, 10, 60);
+        const limit = await rateLimit(`login:${email}`, 10, 60, {
+          failOpen: false,
+        });
 
         if (!limit.success) {
           return null;
@@ -144,6 +155,12 @@ export const authOptions: NextAuthOptions = {
         userId,
         action: "AUTH_LOGOUT",
       });
+
+      try {
+        await clearActiveWorkspace();
+      } catch {
+        // Cookie deletion is best-effort during sign-out.
+      }
     },
   },
 

@@ -10,7 +10,9 @@ import { parseRequestBody } from "@/lib/validation/parse";
 
 export async function POST(request: Request) {
   try {
-    const limited = await rateLimit(`signup:${getClientIp(request)}`, 10, 60);
+    const limited = await rateLimit(`signup:${getClientIp(request)}`, 10, 60, {
+      failOpen: false,
+    });
 
     if (!limited.success) {
       return rateLimitResponse(

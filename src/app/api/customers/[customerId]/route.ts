@@ -30,6 +30,11 @@ export async function GET(
     const workspace =
       await getCurrentWorkspace();
 
+    await requireRole(
+      workspace.id,
+      [...permissions.customers.view],
+    );
+
     const customer =
       await getCustomerById(
         workspace.id,
@@ -44,11 +49,8 @@ export async function GET(
     }
 
     return NextResponse.json(customer);
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to fetch customer." },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to fetch customer.");
   }
 }
 

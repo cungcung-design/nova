@@ -20,11 +20,14 @@ export function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
       try {
-        const response = await fetch("/api/audit-logs?page=1&pageSize=50");
+        const response = await fetch(`/api/audit-logs?page=${page}&pageSize=25`);
 
         if (response.status === 401) {
           throw new Error("You need to sign in to view audit logs.");
@@ -40,6 +43,7 @@ export function AuditLogsPage() {
 
         const result = await response.json();
         setLogs(result.data ?? result.logs ?? []);
+        setTotalPages(result.pagination?.totalPages ?? 1);
       } catch (loadError) {
         setError(
           loadError instanceof Error
@@ -53,7 +57,7 @@ export function AuditLogsPage() {
     }
 
     void load();
-  }, []);
+  }, [page]);
 
   return (
     <div className="space-y-8 p-6 lg:p-8">
@@ -88,6 +92,7 @@ export function AuditLogsPage() {
             No audit activity yet.
           </div>
         ) : (
+          <>
           <div className="divide-y">
             {logs.map((log) => (
               <div
@@ -113,6 +118,28 @@ export function AuditLogsPage() {
               </div>
             ))}
           </div>
+          <div className="flex items-center justify-between border-t px-5 py-4">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="h-11 rounded-lg border px-3 text-sm disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+              className="h-11 rounded-lg border px-3 text-sm disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </>
         )}
       </div>
     </div>

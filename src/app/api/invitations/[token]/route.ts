@@ -29,14 +29,6 @@ export async function POST(_request: Request, { params }: Context) {
       workspaceId: invitation.workspaceId,
     });
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message !== "UNAUTHORIZED" &&
-      error.message !== "FORBIDDEN"
-    ) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
     return apiErrorResponse(error, "Unable to accept invitation.");
   }
 }

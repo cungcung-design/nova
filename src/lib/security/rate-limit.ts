@@ -9,7 +9,10 @@ export async function rateLimit(
   key: string,
   limit = 60,
   windowSeconds = 60,
+  options: { failOpen?: boolean } = {},
 ): Promise<RateLimitResult> {
+  const failOpen = options.failOpen ?? true;
+
   try {
     const redisKey = `rate-limit:${key}`;
     const count = await redis.incr(redisKey);
@@ -25,12 +28,16 @@ export async function rateLimit(
   } catch (error) {
     console.error("Rate limit error:", error);
 
-    /*
-     * Redis must not become a single point of failure.
-     */
+    if (failOpen) {
+      return {
+        success: true,
+        remaining: limit,
+      };
+    }
+
     return {
-      success: true,
-      remaining: limit,
+      success: false,
+      remaining: 0,
     };
   }
 }

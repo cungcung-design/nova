@@ -1,89 +1,85 @@
 "use client";
 
 import { useState } from "react";
-
 import { Trash2 } from "lucide-react";
 
 type Props = {
   memberId: string;
-
   currentRole: string;
+  canChangeRole: boolean;
+  canRemove: boolean;
 };
 
 export function MemberActions({
   memberId,
   currentRole,
+  canChangeRole,
+  canRemove,
 }: Props) {
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  async function changeRole(
-    role: string,
-  ) {
+  async function changeRole(role: string) {
     setLoading(true);
+    setError("");
 
     try {
-      const response =
-        await fetch(
-          `/api/team/${memberId}`,
-          {
-            method: "PATCH",
+      const response = await fetch(`/api/team/${memberId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role }),
+      });
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              role,
-            }),
-          },
-        );
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
-          "Unable to update role.",
-        );
+        throw new Error(data.error ?? "Unable to update role.");
       }
 
       window.location.reload();
-    } catch (error) {
-      console.error(error);
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Unable to update role.",
+      );
     } finally {
       setLoading(false);
     }
   }
 
   async function remove() {
-    const confirmed =
-      window.confirm(
-        "Remove this member from the workspace?",
-      );
+    const confirmed = window.confirm(
+      "Remove this member from the workspace?",
+    );
 
     if (!confirmed) {
       return;
     }
 
     setLoading(true);
+    setError("");
 
     try {
-      const response =
-        await fetch(
-          `/api/team/${memberId}`,
-          {
-            method: "DELETE",
-          },
-        );
+      const response = await fetch(`/api/team/${memberId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
-          "Unable to remove member.",
-        );
+        throw new Error(data.error ?? "Unable to remove member.");
       }
 
       window.location.reload();
-    } catch (error) {
-      console.error(error);
+    } catch (removeError) {
+      setError(
+        removeError instanceof Error
+          ? removeError.message
+          : "Unable to remove member.",
+      );
     } finally {
       setLoading(false);
     }
@@ -97,36 +93,43 @@ export function MemberActions({
     );
   }
 
+  if (!canChangeRole && !canRemove) {
+    return null;
+  }
+
   return (
-    <div className="flex items-center gap-2">
-      <select
-        disabled={loading}
-        defaultValue={currentRole}
-        onChange={(event) =>
-          changeRole(
-            event.target.value,
-          )
-        }
-        className="rounded-lg border bg-background px-2 py-1.5 text-xs"
-      >
-        <option value="MEMBER">
-          Member
-        </option>
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex items-center gap-2">
+        {canChangeRole ? (
+          <select
+            disabled={loading}
+            defaultValue={currentRole}
+            onChange={(event) => {
+              void changeRole(event.target.value);
+            }}
+            className="h-11 rounded-lg border bg-background px-2 text-xs"
+            aria-label="Member role"
+          >
+            <option value="MEMBER">Member</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        ) : null}
 
-        <option value="ADMIN">
-          Admin
-        </option>
-      </select>
-
-      <button
-        type="button"
-        disabled={loading}
-        onClick={remove}
-        className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-destructive"
-        aria-label="Remove member"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+        {canRemove ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              void remove();
+            }}
+            className="flex h-11 w-11 items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-destructive"
+            aria-label="Remove member"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }

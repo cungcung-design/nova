@@ -9,6 +9,7 @@ import { requireWorkspaceRole } from "@/lib/workspace-permissions";
 import { createInvitation, getTeam } from "@/services/team.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { createAuditLog } from "@/lib/audit/audit-service";
+import { appBaseUrl, sendMail } from "@/lib/mail";
 import { emailSchema } from "@/lib/validation/auth";
 
 export async function GET() {
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
     await createAuditLog({
       workspaceId: workspace.id,
       userId: workspace.userId,
-      action: "USER_CREATED",
+      action: "INVITE_MEMBER",
       entityType: "USER",
       entityId: invitation.id,
       metadata: {
@@ -78,9 +79,23 @@ export async function POST(request: Request) {
       },
     });
 
+    const inviteUrl = `${appBaseUrl()}/invite/${invitation.token}`;
+
+    try {
+      await sendMail({
+        to: parsedEmail.data,
+        subject: `You've been invited to ${workspace.name} on NOVA`,
+        text: `You've been invited to join ${workspace.name} as ${role}. Accept the invitation:\n${inviteUrl}\n\nThis link expires in 7 days.`,
+        html: `<p>You've been invited to join <strong>${workspace.name}</strong> as ${role}.</p><p><a href="${inviteUrl}">Accept the invitation</a></p><p>This link expires in 7 days.</p>`,
+      });
+    } catch (error) {
+      console.error("Invitation email failed:", error);
+    }
+
     return NextResponse.json(
       {
         invitation,
+        inviteUrl,
       },
       {
         status: 201,

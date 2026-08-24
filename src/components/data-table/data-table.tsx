@@ -16,6 +16,7 @@ import { ExportMenu } from "./export-menu";
 import { downloadFile } from "@/lib/download-file";
 import { tableResourceToExportResource } from "@/lib/export/validation";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
+import { DropdownMenu, useDropdown } from "@/components/ui/dropdown-menu";
 
 type BulkAction = {
   label: string;
@@ -68,7 +69,7 @@ export function DataTable<T>({
   } = useBulkSelection<string>();
 
   const [showFilters, setShowFilters] = useState(false);
-  const [showColumns, setShowColumns] = useState(false);
+  const columnsMenu = useDropdown();
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const urlSearch = searchParams.get("search") || "";
@@ -324,7 +325,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border bg-card">
+    <div className="rounded-2xl border bg-card">
       {selectedCount > 0 && bulkActions.length > 0 ? (
         <BulkActionToolbar
           selectedCount={selectedCount}
@@ -352,29 +353,33 @@ export function DataTable<T>({
           }
           onFilterClick={() => {
             setShowFilters(!showFilters);
-            setShowColumns(false);
+            columnsMenu.close();
           }}
-          onColumnsClick={() => {
-            setShowColumns(!showColumns);
-            setShowFilters(false);
-          }}
+          onColumnsClick={columnsMenu.toggle}
+          columnsButtonRef={columnsMenu.triggerRef}
+          columnsOpen={columnsMenu.open}
+          columnsMenu={
+            <DropdownMenu
+              open={columnsMenu.open}
+              onClose={columnsMenu.close}
+              triggerRef={columnsMenu.triggerRef}
+              labelledBy={columnsMenu.triggerId}
+            >
+              <ColumnVisibility
+                columns={columns}
+                visibleColumns={visibleColumns}
+                onToggle={toggleColumn}
+              />
+            </DropdownMenu>
+          }
           onClearFilters={handleClearFilters}
         />
       )}
 
       {filterChips}
 
-      {!loading && ((showFilters && renderFilters && !filterPanel) || showColumns) && (
-        <div className="relative border-b px-4 py-4">
-          {showFilters && !filterPanel && renderFilters}
-          {showColumns && (
-            <ColumnVisibility
-              columns={columns}
-              visibleColumns={visibleColumns}
-              onToggle={toggleColumn}
-            />
-          )}
-        </div>
+      {!loading && showFilters && renderFilters && !filterPanel && (
+        <div className="border-b px-4 py-4">{renderFilters}</div>
       )}
 
       {data.length === 0 ? (
@@ -395,7 +400,7 @@ export function DataTable<T>({
                   className={`rounded-xl border bg-card p-4 ${isSelected ? "ring-2 ring-foreground" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="font-medium">
+                    <div className="min-w-0 font-medium break-words">
                       {columns[0].render
                         ? columns[0].render(row)
                         : String((row as unknown as Record<string, unknown>)[String(columns[0].accessor)] ?? "")}
@@ -408,9 +413,9 @@ export function DataTable<T>({
                   </div>
                   <div className="mt-3 space-y-2">
                     {columns.slice(1).map((col) => (
-                      <div key={col.id} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{col.header}</span>
-                        <span>
+                      <div key={col.id} className="flex items-start justify-between gap-3 text-sm">
+                        <span className="shrink-0 text-muted-foreground">{col.header}</span>
+                        <span className="min-w-0 break-words text-right">
                           {col.render ? col.render(row) : String((row as unknown as Record<string, unknown>)[String(col.accessor)] ?? "")}
                         </span>
                       </div>
@@ -469,7 +474,7 @@ export function DataTable<T>({
                         />
                       </td>
                       {activeColumns.map((col) => (
-                        <td key={col.id} className={`px-6 py-4 ${col.className ?? ""}`}>
+                        <td key={col.id} className={`max-w-[18rem] truncate px-6 py-4 ${col.className ?? ""}`}>
                           {col.render ? col.render(row) : String((row as unknown as Record<string, unknown>)[String(col.accessor)] ?? "")}
                         </td>
                       ))}

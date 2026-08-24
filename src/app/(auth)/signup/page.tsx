@@ -20,9 +20,8 @@ export default function SignupPage() {
 
     const formData = new FormData(event.currentTarget);
 
-    const response = await fetch(
-      "/api/auth/signup",
-      {
+    try {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,18 +31,21 @@ export default function SignupPage() {
           email: formData.get("email"),
           password: formData.get("password"),
         }),
-      },
-    );
+      });
 
-    const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      setError(data.error ?? "Unable to create account.");
+      if (!response.ok) {
+        setError(data.error ?? "Unable to create account.");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/login?registered=true");
+    } catch {
+      setError("Unable to create account. Please try again.");
       setLoading(false);
-      return;
     }
-
-    router.push("/login?registered=true");
   }
 
   return (

@@ -79,14 +79,14 @@ export async function POST(request: Request) {
         { job: serializeExportJob(processed.job) },
         { status: 201 },
       );
-    } catch (error) {
+    } catch (exportError) {
+      console.error("Export processing failed:", exportError);
       const current = await getExportJob(workspace.id, job.id);
 
       return NextResponse.json(
         {
           job: serializeExportJob(current ?? job),
-          message:
-            error instanceof Error ? error.message : "Unable to create export.",
+          message: "Unable to complete export.",
         },
         { status: 201 },
       );

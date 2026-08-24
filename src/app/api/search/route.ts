@@ -5,6 +5,10 @@ import {
 import {
   getCurrentWorkspace,
 } from "@/lib/current-workspace";
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
+import { apiErrorResponse } from "@/lib/api-error";
+import { sanitizeSearchQuery } from "@/lib/security/security";
 
 import {
   db,
@@ -17,13 +21,17 @@ export async function GET(
     const workspace =
       await getCurrentWorkspace();
 
+    await requireRole(
+      workspace.id,
+      [...permissions.workspace.view],
+    );
+
     const url =
       new URL(request.url);
 
-    const query =
-      url.searchParams
-        .get("q")
-        ?.trim();
+    const query = sanitizeSearchQuery(
+      url.searchParams.get("q") ?? "",
+    );
 
     if (!query) {
       return NextResponse.json({
@@ -41,8 +49,7 @@ export async function GET(
       });
     }
 
-    const search =
-      query.slice(0, 100);
+    const search = query;
 
     const [
       customers,
@@ -155,19 +162,6 @@ export async function GET(
       orders,
     });
   } catch (error) {
-    console.error(
-      "GET /api/search",
-      error,
-    );
-
-    return NextResponse.json(
-      {
-        error:
-          "Unable to perform search.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to perform search.");
   }
 }

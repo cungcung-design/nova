@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
-import {
-  getAnalytics,
-} from "@/services/analytics.service";
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
+import { getAnalytics } from "@/services/analytics.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 export async function GET(
   request: Request,
@@ -12,6 +12,11 @@ export async function GET(
   try {
     const workspace =
       await getCurrentWorkspace();
+
+    await requireRole(
+      workspace.id,
+      [...permissions.reports.view],
+    );
 
     const url =
       new URL(request.url);
@@ -38,19 +43,6 @@ export async function GET(
       analytics,
     );
   } catch (error) {
-    console.error(
-      "GET /api/analytics",
-      error,
-    );
-
-    return NextResponse.json(
-      {
-        error:
-          "Unable to load analytics.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to load analytics.");
   }
 }

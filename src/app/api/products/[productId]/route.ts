@@ -30,6 +30,11 @@ export async function GET(
     const workspace =
       await getCurrentWorkspace();
 
+    await requireRole(
+      workspace.id,
+      [...permissions.products.view],
+    );
+
     const product =
       await getProductById(
         workspace.id,
@@ -46,13 +51,8 @@ export async function GET(
     }
 
     return NextResponse.json(product);
-  } catch {
-    return NextResponse.json(
-      {
-        error: "Unable to fetch product.",
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to fetch product.");
   }
 }
 

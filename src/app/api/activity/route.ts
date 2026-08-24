@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { getActivities } from "@/services/activity.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 export async function GET() {
   try {
     const workspace = await getCurrentWorkspace();
+    await requireRole(workspace.id, [...permissions.workspace.view]);
 
     const activities = await getActivities(workspace.id);
 
@@ -14,15 +17,6 @@ export async function GET() {
       activities,
     });
   } catch (error) {
-    console.error("GET /api/activity", error);
-
-    return NextResponse.json(
-      {
-        error: "Unable to load activity.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to load activity.");
   }
 }

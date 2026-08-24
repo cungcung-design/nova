@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
+import { apiErrorResponse } from "@/lib/api-error";
 
 import {
   getNotifications,
@@ -21,15 +22,6 @@ export async function GET() {
       unreadCount,
     });
   } catch (error) {
-    console.error("GET /api/notifications", error);
-
-    return NextResponse.json(
-      {
-        error: "Unable to load notifications.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to load notifications.");
   }
 }

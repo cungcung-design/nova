@@ -61,6 +61,7 @@ function LoginForm() {
   }
 
   const registered = searchParams.get("registered") === "true";
+  const reset = searchParams.get("reset") === "true";
 
   return (
     <div className="auth-card">
@@ -72,8 +73,13 @@ function LoginForm() {
       </p>
 
       {registered && (
-        <div className="auth-error">
+        <div className="auth-success">
           Account created successfully. You can now sign in.
+        </div>
+      )}
+      {reset && (
+        <div className="auth-success">
+          Password updated. You can now sign in.
         </div>
       )}
 
@@ -110,6 +116,11 @@ function LoginForm() {
             required
             className="auth-input"
           />
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
         {error && <div className="auth-error">{error}</div>}

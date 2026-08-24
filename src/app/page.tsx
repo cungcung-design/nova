@@ -18,13 +18,13 @@ export default function RootPage() {
         <div className="flex w-full flex-col gap-3 sm:flex-row">
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-950"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-950"
           >
             Sign in
           </Link>
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-900 dark:border-zinc-800 dark:text-zinc-50"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-900 dark:border-zinc-800 dark:text-zinc-50"
           >
             Create an account
           </Link>

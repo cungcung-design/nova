@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
-import {
-  markAllNotificationsRead,
-} from "@/services/notification.service";
+import { markAllNotificationsRead } from "@/services/notification.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 export async function PATCH() {
   try {
@@ -16,15 +14,6 @@ export async function PATCH() {
       success: true,
     });
   } catch (error) {
-    console.error("PATCH notifications/read-all", error);
-
-    return NextResponse.json(
-      {
-        error: "Unable to mark notifications as read.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return apiErrorResponse(error, "Unable to mark notifications as read.");
   }
 }

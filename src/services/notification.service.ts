@@ -64,11 +64,13 @@ export async function getUnreadCount(
 export async function markNotificationRead(
   notificationId: string,
   userId: string,
+  workspaceId?: string,
 ) {
   return db.notification.updateMany({
     where: {
       id: notificationId,
       userId,
+      ...(workspaceId ? { workspaceId } : {}),
     },
     data: {
       isRead: true,

@@ -4,6 +4,7 @@ import { Calendar, Filter, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 
 import { statusParamToValues } from "@/lib/filters";
+import { DropdownMenu, useDropdown } from "@/components/ui/dropdown-menu";
 
 const STATUS_OPTIONS = [
   { label: "Active", value: "ACTIVE" },
@@ -36,7 +37,7 @@ export function FilterPanel({
   onApply,
   onClear,
 }: FilterPanelProps) {
-  const [open, setOpen] = useState(false);
+  const menu = useDropdown();
   const [draftStatuses, setDraftStatuses] = useState<string[]>(
     statusParamToValues(status),
   );
@@ -54,7 +55,7 @@ export function FilterPanel({
   ].filter(Boolean).length;
 
   function toggleOpen() {
-    if (!open) {
+    if (!menu.open) {
       setDraftStatuses(statusParamToValues(status));
       setDraftMinRevenue(minRevenue ?? "");
       setDraftMaxRevenue(maxRevenue ?? "");
@@ -62,7 +63,7 @@ export function FilterPanel({
       setDraftCreatedTo(createdTo ?? "");
     }
 
-    setOpen((current) => !current);
+    menu.toggle();
   }
 
   function toggleStatus(value: string) {
@@ -82,7 +83,7 @@ export function FilterPanel({
       createdTo: draftCreatedTo,
     });
 
-    setOpen(false);
+    menu.close();
   }
 
   function clear() {
@@ -93,17 +94,15 @@ export function FilterPanel({
     setDraftCreatedTo("");
 
     onClear();
-    setOpen(false);
+    menu.close();
   }
 
   return (
     <div className="relative">
       <button
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="dialog"
+        {...menu.triggerProps}
         onClick={toggleOpen}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition hover:bg-muted"
+        className="inline-flex h-11 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition hover:bg-muted"
       >
         <Filter className="h-4 w-4" />
         Filters
@@ -114,20 +113,14 @@ export function FilterPanel({
         )}
       </button>
 
-      {open && (
-        <>
-          <button
-            type="button"
-            aria-label="Close filters"
-            className="fixed inset-0 z-20 cursor-default"
-            onClick={() => setOpen(false)}
-          />
-
-          <div
-            role="dialog"
-            aria-label="Filters"
-            className="fixed inset-x-4 top-24 z-30 max-h-[80vh] overflow-y-auto rounded-2xl border bg-background p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[320px] sm:max-h-none"
-          >
+      <DropdownMenu
+        open={menu.open}
+        onClose={menu.close}
+        triggerRef={menu.triggerRef}
+        role="dialog"
+        labelledBy={menu.triggerId}
+        className="w-[min(20rem,calc(100vw-2rem))] p-4"
+      >
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold">Filters</h3>
@@ -138,8 +131,8 @@ export function FilterPanel({
 
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 hover:bg-muted"
+                onClick={menu.close}
+                className="rounded-lg p-2 hover:bg-muted"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -224,7 +217,7 @@ export function FilterPanel({
               <button
                 type="button"
                 onClick={clear}
-                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-medium hover:bg-muted"
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-medium hover:bg-muted"
               >
                 <RotateCcw className="h-4 w-4" />
                 Reset
@@ -232,14 +225,12 @@ export function FilterPanel({
               <button
                 type="button"
                 onClick={apply}
-                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-foreground text-sm font-medium text-background hover:opacity-90"
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-lg bg-foreground text-sm font-medium text-background hover:opacity-90"
               >
                 Apply filters
               </button>
             </div>
-          </div>
-        </>
-      )}
+      </DropdownMenu>
     </div>
   );
 }

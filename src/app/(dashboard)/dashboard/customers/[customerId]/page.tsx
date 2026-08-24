@@ -106,9 +106,10 @@ export default async function CustomerPage({
           ) : (
             <div className="mt-5 space-y-3">
               {customer.orders.map((order) => (
-                <div
+                <Link
                   key={order.id}
-                  className="flex items-center justify-between border-b pb-3 last:border-0"
+                  href={`/dashboard/orders/${order.id}`}
+                  className="flex items-center justify-between border-b pb-3 last:border-0 hover:text-foreground"
                 >
                   <div>
                     <p className="text-sm font-medium">
@@ -123,7 +124,7 @@ export default async function CustomerPage({
                   <p className="text-sm font-medium">
                     ${Number(order.total).toFixed(2)}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           )}

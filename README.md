@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NOVA
 
-## Getting Started
+Premium workspace dashboard for customers, products, orders, billing, and reporting.
 
-First, run the development server:
+## Local development
+
+1. Copy `.env.example` to `.env` and fill in local values. Never commit secrets.
+2. Start PostgreSQL.
+3. Install and generate the Prisma client:
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npx tsx prisma/seed.ts
+```
+
+4. Run the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Seed login is documented in `prisma/seed.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript |
+| `npm run build` | Production build |
+| `npm start` | Production server |
+| `npm run db:generate` | Generate Prisma Client |
+| `npm run db:migrate` | Development migrations |
+| `npm run db:deploy` | Production migrations |
 
-## Learn More
+Use `prisma migrate deploy` against production. Do not run `prisma migrate dev` on production databases.
 
-To learn more about Next.js, take a look at the following resources:
+## Health
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`GET /api/health` reports application and database status. Redis/cache unavailability does not fail the health check by itself.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Production
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Configure secrets in the hosting provider. Do not put secrets in `NEXT_PUBLIC_` variables except the Stripe publishable key.
+- CI runs lint, typecheck, Prisma generate/validate, and a production build on pull requests.
+- Optional Docker files: `Dockerfile` and `docker-compose.production.yml`.

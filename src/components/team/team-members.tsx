@@ -12,9 +12,11 @@ type Props = {
       image: string | null;
     };
   }>;
+  canChangeRole: boolean;
+  canRemove: boolean;
 };
 
-export function TeamMembers({ members }: Props) {
+export function TeamMembers({ members, canChangeRole, canRemove }: Props) {
   return (
     <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
       <div className="border-b px-6 py-5">
@@ -71,6 +73,8 @@ export function TeamMembers({ members }: Props) {
                 <MemberActions
                   memberId={member.id}
                   currentRole={member.role}
+                  canChangeRole={canChangeRole}
+                  canRemove={canRemove}
                 />
               </div>
             </div>

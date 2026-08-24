@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentWorkspace } from "@/lib/current-workspace";
-
-import {
-  getOrderById,
-} from "@/services/order.service";
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
+import { getOrderById } from "@/services/order.service";
+import { apiErrorResponse } from "@/lib/api-error";
 
 type Context = {
   params: Promise<{
@@ -23,6 +23,11 @@ export async function GET(
     const workspace =
       await getCurrentWorkspace();
 
+    await requireRole(
+      workspace.id,
+      [...permissions.orders.view],
+    );
+
     const order =
       await getOrderById(
         workspace.id,
@@ -39,13 +44,7 @@ export async function GET(
     }
 
     return NextResponse.json(order);
-  } catch {
-    return NextResponse.json(
-      {
-        error:
-          "Unable to fetch order.",
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error, "Unable to fetch order.");
   }
 }

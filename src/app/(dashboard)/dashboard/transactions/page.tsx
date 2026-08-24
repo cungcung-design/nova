@@ -1,6 +1,33 @@
 import { ExportButton } from "@/components/export/export-button";
+import { TransactionsTable } from "@/components/transactions/transactions-table";
+import { getCurrentWorkspace } from "@/lib/current-workspace";
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
+import { getTransactions } from "@/services/transaction.service";
 
-export default function TransactionsPage() {
+type Props = {
+  searchParams: Promise<{
+    search?: string;
+    status?: string;
+    type?: string;
+    page?: string;
+  }>;
+};
+
+export default async function TransactionsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const workspace = await getCurrentWorkspace();
+  await requireRole(workspace.id, [...permissions.orders.view]);
+
+  const result = await getTransactions({
+    workspaceId: workspace.id,
+    search: params.search,
+    status: params.status,
+    type: params.type,
+    page: Math.max(1, Number(params.page ?? "1")),
+    pageSize: 25,
+  });
+
   return (
     <div className="space-y-8 p-6 lg:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -17,12 +44,14 @@ export default function TransactionsPage() {
         <ExportButton resource="TRANSACTIONS" />
       </div>
 
-      <section className="rounded-2xl border bg-card p-6 shadow-sm">
-        <p className="text-sm text-muted-foreground">
-          Transactions are coming soon. You can still export the current
-          workspace payment history from here.
-        </p>
-      </section>
+      <TransactionsTable
+        transactions={result.transactions}
+        total={result.total}
+        page={result.page}
+        pageSize={result.pageSize}
+        search={params.search}
+        status={params.status}
+      />
     </div>
   );
 }

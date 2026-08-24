@@ -18,6 +18,7 @@ import { createAuditLog } from "@/lib/audit/audit-service";
 export async function GET(request: Request) {
   try {
     const workspace = await getCurrentWorkspace();
+    await requireRole(workspace.id, [...permissions.customers.view]);
 
     const url = new URL(request.url);
     const filters = getCustomerFilters(url.searchParams);

@@ -107,3 +107,19 @@ export const mainNavigation = [
     ],
   },
 ];
+
+export function isNavItemVisible(href: string, role: string) {
+  if (href === "/dashboard/audit-logs") {
+    return role === "OWNER" || role === "ADMIN";
+  }
+
+  if (href === "/dashboard/settings/billing") {
+    return role === "OWNER" || role === "ADMIN";
+  }
+
+  if (href === "/dashboard/settings/team") {
+    return role === "OWNER" || role === "ADMIN" || role === "MANAGER";
+  }
+
+  return true;
+}

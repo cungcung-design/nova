@@ -77,14 +77,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message !== "UNAUTHORIZED" &&
-      error.message !== "FORBIDDEN"
-    ) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
     return apiErrorResponse(error, "Unable to create order.");
   }
 }

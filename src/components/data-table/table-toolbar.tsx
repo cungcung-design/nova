@@ -1,7 +1,7 @@
 "use client";
 
 import { Filter, SlidersHorizontal, X } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 import { TableSearch } from "./table-search";
 
@@ -16,6 +16,9 @@ type TableToolbarProps = {
   filterSlot?: ReactNode;
   exportSlot?: ReactNode;
   hideClearButton?: boolean;
+  columnsButtonRef?: Ref<HTMLButtonElement>;
+  columnsOpen?: boolean;
+  columnsMenu?: ReactNode;
 };
 
 export function TableToolbar({
@@ -29,6 +32,9 @@ export function TableToolbar({
   filterSlot,
   exportSlot,
   hideClearButton = false,
+  columnsButtonRef,
+  columnsOpen = false,
+  columnsMenu,
 }: TableToolbarProps) {
   return (
     <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
@@ -43,7 +49,7 @@ export function TableToolbar({
           <button
             type="button"
             onClick={onFilterClick}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition hover:bg-muted"
+            className="inline-flex h-11 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition hover:bg-muted"
           >
             <Filter className="h-4 w-4" />
             Filters
@@ -56,13 +62,17 @@ export function TableToolbar({
         )}
 
         <button
+          ref={columnsButtonRef}
           type="button"
+          aria-expanded={columnsOpen}
+          aria-haspopup="menu"
           onClick={onColumnsClick}
-          className="hidden h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition hover:bg-muted md:inline-flex"
+          className="hidden h-11 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition hover:bg-muted md:inline-flex"
         >
           <SlidersHorizontal className="h-4 w-4" />
           Columns
         </button>
+        {columnsMenu}
 
         {exportSlot}
 
@@ -70,7 +80,7 @@ export function TableToolbar({
           <button
             type="button"
             onClick={onClearFilters}
-            className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
             Clear

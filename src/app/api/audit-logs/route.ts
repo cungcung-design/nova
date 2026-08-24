@@ -1,5 +1,5 @@
-import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/auth/permissions";
+import { requireRole } from "@/lib/authz";
+import { permissions } from "@/lib/permissions";
 import { getCurrentWorkspace } from "@/lib/current-workspace";
 import { getAuditLogs } from "@/services/audit.service";
 import { paginationSchema } from "@/lib/validation/common";
@@ -9,31 +9,8 @@ import { AuditAction } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return Response.json(
-        {
-          message: "Unauthorized",
-        },
-        {
-          status: 401,
-        },
-      );
-    }
-
     const workspace = await getCurrentWorkspace();
-
-    if (!hasPermission(workspace.role, "audit.read")) {
-      return Response.json(
-        {
-          message: "Forbidden",
-        },
-        {
-          status: 403,
-        },
-      );
-    }
+    await requireRole(workspace.id, [...permissions.audit.view]);
 
     const url = new URL(request.url);
     const parsed = paginationSchema.safeParse({

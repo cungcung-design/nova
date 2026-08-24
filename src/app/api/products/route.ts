@@ -63,6 +63,13 @@ export async function GET(
         "sortBy",
       ) ?? "createdAt";
 
+    const allowedSortFields = ["createdAt", "name", "price", "stock"] as const;
+    const safeSortBy = allowedSortFields.includes(
+      sortBy as (typeof allowedSortFields)[number],
+    )
+      ? sortBy
+      : "createdAt";
+
     const sortDirection =
       url.searchParams.get(
         "sortDirection",
@@ -77,7 +84,7 @@ export async function GET(
         status: status || undefined,
         page,
         pageSize,
-        sortBy,
+        sortBy: safeSortBy,
         sortDirection,
       });
 
