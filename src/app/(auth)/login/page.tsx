@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { isSafeRedirect } from "@/lib/security/security";
+import { AuthLogo } from "@/components/auth/auth-logo";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -65,7 +66,7 @@ function LoginForm() {
 
   return (
     <div className="auth-card">
-      <div className="auth-badge">N</div>
+      <AuthLogo />
 
       <h1 className="auth-title">Welcome back</h1>
       <p className="auth-subtitle">
@@ -147,7 +148,7 @@ export default function LoginPage() {
         <Suspense
           fallback={
             <div className="auth-card">
-              <div className="auth-badge">N</div>
+              <AuthLogo />
               <div className="mt-6 h-8 w-3/4 animate-pulse rounded bg-muted" />
             </div>
           }

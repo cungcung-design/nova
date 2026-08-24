@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 
+import { AuthLogo } from "@/components/auth/auth-logo";
+
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -51,7 +53,7 @@ export default function ForgotPasswordPage() {
     <main className="auth-page">
       <div className="w-full max-w-sm">
         <div className="auth-card">
-          <div className="auth-badge">N</div>
+          <AuthLogo />
           <h1 className="auth-title">Reset your password</h1>
           <p className="auth-subtitle">
             Enter your email and we&apos;ll send a reset link if an account exists.

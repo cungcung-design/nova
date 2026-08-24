@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { AuthLogo } from "@/components/auth/auth-logo";
+
 export default function SignupPage() {
   const router = useRouter();
 
@@ -52,7 +54,7 @@ export default function SignupPage() {
     <main className="auth-page">
       <div className="w-full max-w-sm">
         <div className="auth-card">
-          <div className="auth-badge">N</div>
+          <AuthLogo />
 
           <h1 className="auth-title">
             Create your NOVA account

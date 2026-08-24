@@ -4,6 +4,8 @@ import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { AuthLogo } from "@/components/auth/auth-logo";
+
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -59,7 +61,7 @@ function ResetPasswordForm() {
 
   return (
     <div className="auth-card">
-      <div className="auth-badge">N</div>
+      <AuthLogo />
       <h1 className="auth-title">Choose a new password</h1>
       <p className="auth-subtitle">Use at least 8 characters.</p>
 
@@ -125,7 +127,7 @@ export default function ResetPasswordPage() {
         <Suspense
           fallback={
             <div className="auth-card">
-              <div className="auth-badge">N</div>
+              <AuthLogo />
               <div className="mt-6 h-8 w-3/4 animate-pulse rounded bg-muted" />
             </div>
           }

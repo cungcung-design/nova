@@ -22,7 +22,7 @@ export default function HomePage() {
         />
 
         <div className="pointer-events-none relative z-10 flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
-          <div className="w-full max-w-4xl text-center sm:text-left">
+          <div className="w-full max-w-4xl text-center">
             <p className="font-panchang text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500 sm:text-sm">
               NOVA
             </p>
@@ -33,21 +33,21 @@ export default function HomePage() {
               management
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-zinc-600 sm:mx-0 sm:mt-6 sm:text-lg sm:leading-8">
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-zinc-600 sm:mt-6 sm:text-lg sm:leading-8">
               Customers, products, orders, analytics, and reporting — everything
               your business needs in one powerful workspace.
             </p>
 
-            <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-start">
+            <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row">
               <Link
                 href="/login"
-                className="pointer-events-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-zinc-950 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+                className="pointer-events-auto inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-zinc-950 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 sm:w-auto"
               >
                 Sign in
               </Link>
               <Link
                 href="/signup"
-                className="pointer-events-auto inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-200 bg-white/80 px-6 py-3 text-sm font-medium text-zinc-950 backdrop-blur-md transition hover:bg-white"
+                className="pointer-events-auto inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-200 bg-white/80 px-6 py-3 text-sm font-medium text-zinc-950 backdrop-blur-md transition hover:bg-white sm:w-auto"
               >
                 Create an account
               </Link>

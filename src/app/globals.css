@@ -177,13 +177,18 @@ body {
 
   .auth-badge {
     display: flex;
-    height: 2.5rem;
-    width: 2.5rem;
+    height: 2.75rem;
+    width: 2.75rem;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
     border-radius: 0.75rem;
     background: var(--color-primary);
+    font-family: var(--font-panchang), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.25rem;
     font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
     color: var(--color-primary-foreground);
   }
 
