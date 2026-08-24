@@ -80,6 +80,22 @@ enum InvitationStatus {
   CANCELLED
 }
 
+enum SubscriptionPlan {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+  PAUSED
+}
+
 enum AuditAction {
   LOGIN
   LOGOUT
@@ -149,6 +165,8 @@ model Workspace {
   notifications Notification[]
   auditLogs    AuditLog[]
 
+  subscription Subscription?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -213,6 +231,40 @@ model WorkspaceInvitation {
   @@index([workspaceId])
   @@index([email])
   @@index([status])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+
+  workspaceId          String             @unique
+
+  workspace            Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  stripeCustomerId     String             @unique
+
+  stripeSubscriptionId String?            @unique
+
+  stripePriceId        String?
+
+  plan                 SubscriptionPlan   @default(FREE)
+
+  status               SubscriptionStatus @default(ACTIVE)
+
+  currentPeriodStart   DateTime?
+
+  currentPeriodEnd     DateTime?
+
+  cancelAtPeriodEnd    Boolean            @default(false)
+
+  canceledAt           DateTime?
+
+  createdAt            DateTime           @default(now())
+
+  updatedAt            DateTime           @updatedAt
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([plan])
 }
 
 model Customer {

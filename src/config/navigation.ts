@@ -2,7 +2,6 @@ import {
   Activity,
   BarChart3,
   Bell,
-  Boxes,
   CreditCard,
   FileBarChart,
   LayoutDashboard,
@@ -85,7 +84,7 @@ export const mainNavigation = [
       },
       {
         title: "Billing",
-        href: "/dashboard/billing",
+        href: "/dashboard/settings/billing",
         icon: CreditCard,
       },
       {
